@@ -1,80 +1,83 @@
 package src;
 
-import org.json.simple.JSONObject;
+import org.json.simple.*;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
 
-// A Java program for a Server
-import java.net.*;
-import java.io.*;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
-public class Server
-{
-    //initialize socket and input stream
-    private Socket          socket   = null;
-    private ServerSocket    server   = null;
-    private DataInputStream in       =  null;
+// main Server class
+public class Server {
 
-    // constructor with port
-    public Server(int port)
-    {
-        // starts server and waits for a connection
-        try
-        {
-            server = new ServerSocket(port);
-            System.out.println("Server started");
-            System.out.println("Waiting for a client ...");
+    public static void main(String[] args) throws Exception {
+        // create server on port 8000
+        HttpServer server = HttpServer.create(new InetSocketAddress(8000), 0);
+        // initialize connection URLs
+        server.createContext("/init", new InitHandler());
+        server.createContext("/send", new MsgSendHandler());
+        server.createContext("/poll", new MsgPollHandler());
+        // start server
+        server.setExecutor(null); // creates a default executor
+        server.start();
+    }
+}
 
-            // accept client
-            socket = server.accept();
-            System.out.println("Client accepted\n");
+// InitHandler handles client registration and login on the server
+class InitHandler implements HttpHandler {
 
-            // parse client IP
-            String clientIP = socket.getRemoteSocketAddress().toString().split(":")[0].substring(1);
-
-
-            // takes input from the client socket
-            in = new DataInputStream(
-                new BufferedInputStream(socket.getInputStream()));
-
-            String line = "";
-
-            // reads message from client until "Shh" is sent
-            while (!line.equals("Shh"))
-            {
-                try
-                {
-                    line = in.readUTF();
-                    System.out.print(clientIP);
-                    System.out.print(" says: ");
-                    System.out.println(line);
-
-                }
-                catch(IOException i)
-                {
-                    System.out.println(i);
-                }
-            }
-            System.out.println("Closing connection");
-
-            // close connection
-            socket.close();
-            in.close();
-        }
-        catch(IOException i)
-        {
-            System.out.println(i);
-        }
+    @Override
+    public void handle(HttpExchange t) throws IOException {
+        String response = "You initialized a connection! (added you to / accessed your entry in user DB)";
+        t.sendResponseHeaders(200, response.length());
+        OutputStream os = t.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
     }
 
-    // message receiver function
-    private JSONObject getMessage(DataInputStream in) {
-        return null;
+    int addUserToDB(String JsonUsrObject) {
+        // prototype: checks if user is in the DB. If not, add a new entry for them
+        return 0;
     }
-    public static void main(String args[])
-    {
 
-        Server server = new Server(5000);
+}
+
+// MsgSendHandler handles new messages sent by the client
+class MsgSendHandler implements HttpHandler {
+
+    @Override
+    public void handle(HttpExchange t) throws IOException {
+        String response = "You sent a message to the server! (added message to message DB)";
+        t.sendResponseHeaders(200, response.length());
+        OutputStream os = t.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
     }
+
+    int addMsgToDB(String JsonMsgObject) {
+        // prototype: add message data to message DB
+        return 0;
+    }
+}
+
+// MsgPollHandler handles clients requesting all new messages since last poll
+class MsgPollHandler implements HttpHandler {
+
+    @Override
+    public void handle(HttpExchange t) throws IOException {
+        String response = "You asked for recent messages! (sent you new entries in message DB)";
+        t.sendResponseHeaders(200, response.length());
+        OutputStream os = t.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
+    }
+
+    int updateUser(int userId, int mostRecentMessage) {
+        // prototype: update user's entry to the most recently read message
+        return 0;
+    }
+
 }
