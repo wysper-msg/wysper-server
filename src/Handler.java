@@ -8,6 +8,7 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -44,13 +45,28 @@ public class Handler implements HttpHandler {
             os.write(response.getBytes());
             os.close();
 
-        } catch (Exception e) {
-            // read failed, write failed, or JSON parse failed
-            System.err.println("Unable to process request: " + e.getClass().toString());
-            System.err.println(e.toString());
-
+        } catch (ParseException e1) {
+            // JSON parse failed
+            System.err.println("Unable to parse JSON message: " + e1.toString());
+            // send error code to client
+            sendError(t);
+        } catch (IOException e2) {
+            // Client communication failed
+            System.err.println("Unable to communicate with client: " + e2.toString());
         }
+    }
 
+    /**
+     * Respond to the client with an error code
+     * @param t - HttpExchange that experienced the error
+     */
+    private void sendError(HttpExchange t) {
+        try {
+            t.sendResponseHeaders(500, 0);
+        }
+        catch (IOException e) {
+            System.err.println("Unable to communicate with client: " + e.toString());
+        }
     }
 
     /**
@@ -88,7 +104,6 @@ class InitHandler extends Handler {
 
 }
 */
-
 
 // SendHandler handles new messages sent by the client
 class SendHandler extends Handler {
