@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
  * Handler implements the abstract structure for handling messages from clients
  * and accessing the database as necessary. Intended to be extended by other classes.
  */
-public class Handler implements HttpHandler {
+abstract class Handler implements HttpHandler {
 
     /**
      * Handle requests from clients and access the database
@@ -72,15 +72,13 @@ public class Handler implements HttpHandler {
     /**
      * Access the database. Extended by child classes.
      * @param req - JSON String representing the data sent or requested by the client
+     * @return - String response message for client
      * @throws ParseException - if JSON parse fails
      */
-    protected String accessDB(String req) throws ParseException {
-        System.out.println(req);
-        return "";
-    }
+    abstract protected String accessDB(String req) throws ParseException;
 
     /**
-     *
+     * parse a JSON message
      * @param jsonMsg - JSON string representing data sent by client
      * @return - JSONObject containing data parsed from string
      * @throws ParseException - if JSON parse fails
@@ -92,23 +90,39 @@ public class Handler implements HttpHandler {
 }
 
 /**
-// InitHandler handles client registration and login on the server
+ * InitHandler handles the first request for messages when a user
+ * logs in.
+ */
 class InitHandler extends Handler {
 
-    @Override
-    String accessDB(String JsonUsr) {
-        // prototype: checks if user is in the DB. If not, add a new entry for them
-        System.out.println(JsonUsr);
+    private int mostRecentMessages = 50;
+
+    /**
+     * Get a constant number of most recent messages from the database
+     *
+     * @param req - JSON String containing user account information
+     * @return - JSON array containing a number of most recent messages
+     * @throws ParseException - if JSON request is malformed
+     */
+    protected String accessDB(String req) {
+        // TODO: return n most recent messages
         return "";
     }
-
 }
-*/
 
-// SendHandler handles new messages sent by the client
+/**
+ * SendHandler handles new messages being sent to the server, storing
+ * them in the message database.
+ */
 class SendHandler extends Handler {
 
-    @Override
+    /**
+     * Put a new message in the database
+     *
+     * @param req - JSON String containing user's message
+     * @return - Empty response string to signal a success
+     * @throws ParseException - if JSON request is malformed
+     */
     protected String accessDB(String req) throws ParseException {
         JSONObject json = parse(req);
         // TODO: store JSON data in message database
@@ -116,11 +130,20 @@ class SendHandler extends Handler {
         return "";
     }
 }
-
-// PullHandler handles clients requesting all new messages since last request
+/**
+ * PullHandler handles clients asking for all new messages since the last
+ * time they checked
+ */
 class PullHandler extends Handler {
 
-    @Override
+    /**
+     * Get all the messages in the database that were sent since the
+     * last time this user requested new messages
+     *
+     * @param req - JSON String containing user account information
+     * @return - JSON array containing a number of most recent messages
+     * @throws ParseException - if JSON request is malformed
+     */
     protected String accessDB(String req) {
         // TODO: implement user database connection:
         // Get user ID from request

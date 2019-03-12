@@ -12,10 +12,10 @@ public class Server {
      * @return - Server object configured and ready to use
      */
     private static HttpServer initServer(int port) throws Exception {
-        // create server on port 8000
+        // create server
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         // initialize connection URLs
-        /** server.createContext("/init", new InitHandler()); */
+        server.createContext("/init", new InitHandler());
         server.createContext("/send", new SendHandler());
         server.createContext("/poll", new PullHandler());
         // creates a default executor
@@ -24,14 +24,17 @@ public class Server {
     }
 
     public static void main(String[] args) throws Exception {
+
         // get port
         System.out.print("Enter server port: ");
         Scanner scanner = new Scanner(System.in);
         int port = scanner.nextInt();
+
         // start server
         HttpServer s = initServer(port);
         s.start();
-        System.out.println("Starting server");
+        System.out.println("Starting server. Type \'Exit\' to quit.");
+
         // wait for termination command
         String command;
         while (true) {
@@ -40,6 +43,7 @@ public class Server {
                 break;
             }
         }
+
         // stop server
         s.stop(0);
     }
