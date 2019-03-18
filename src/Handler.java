@@ -19,6 +19,12 @@ import java.nio.charset.StandardCharsets;
  */
 abstract class Handler implements HttpHandler {
 
+    DbWrapper database;
+
+    public Handler(DbWrapper db) {
+        database = db;
+    }
+
     /**
      * Handle requests from clients and access the database
      * @param t - HTTP exchange object, provided by the server when a client accesses a URL
@@ -30,7 +36,11 @@ abstract class Handler implements HttpHandler {
             // read request data
             BufferedReader reqReader = new BufferedReader(new InputStreamReader(t.getRequestBody(), StandardCharsets.UTF_8));
             String temp;
-            StringBuilder req = new StringBuilder();
+            StringBuilder req = new StringBuilder();implement user database connection:
+        // Get user ID from request
+        // Access user DB to identify which message was sent last
+        // collect all messages newer than this
+        // aggregate in JSONArray, return as string
             while((temp = reqReader.readLine()) != null) {
                 req.append(temp);
             }
@@ -97,6 +107,10 @@ class InitHandler extends Handler {
 
     private int mostRecentMessages = 50;
 
+    public InitHandler(DbWrapper db) {
+        super(db);
+    }
+
     /**
      * Get a constant number of most recent messages from the database
      *
@@ -105,7 +119,7 @@ class InitHandler extends Handler {
      * @throws ParseException - if JSON request is malformed
      */
     protected String accessDB(String req) {
-        // TODO: return n most recent messages
+        // TODO: return "mostRecentMessages" number of messages
         return "";
     }
 }
@@ -116,6 +130,10 @@ class InitHandler extends Handler {
  */
 class SendHandler extends Handler {
 
+    public SendHandler(DbWrapper db) {
+        super(db);
+    }
+
     /**
      * Put a new message in the database
      *
@@ -125,8 +143,8 @@ class SendHandler extends Handler {
      */
     protected String accessDB(String req) throws ParseException {
         JSONObject json = parse(req);
-        // TODO: store JSON data in message database
-        System.out.println(json.get("username") + ": " + json.get("body"));
+        // TODO: add message to database
+
         return "";
     }
 }
@@ -135,6 +153,10 @@ class SendHandler extends Handler {
  * time they checked
  */
 class PullHandler extends Handler {
+
+    public PullHandler(DbWrapper db) {
+        super(db);
+    }
 
     /**
      * Get all the messages in the database that were sent since the
@@ -145,11 +167,7 @@ class PullHandler extends Handler {
      * @throws ParseException - if JSON request is malformed
      */
     protected String accessDB(String req) {
-        // TODO: implement user database connection:
-        // Get user ID from request
-        // Access user DB to identify which message was sent last
-        // collect all messages newer than this
-        // aggregate in JSONArray, return as string
+        // TODO: return all messages newer than given user's most recently viewed message
         return "";
     }
 }

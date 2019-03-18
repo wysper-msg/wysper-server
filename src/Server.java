@@ -6,8 +6,10 @@ import com.sun.net.httpserver.HttpServer;
 
 public class Server {
 
+    private static DbWrapper db;
+
     /**
-     *
+     * Initialize HTTP server
      * @param port - Port to open a server on
      * @return - Server object configured and ready to use
      */
@@ -15,9 +17,9 @@ public class Server {
         // create server
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         // initialize connection URLs
-        server.createContext("/init", new InitHandler());
-        server.createContext("/send", new SendHandler());
-        server.createContext("/poll", new PullHandler());
+        server.createContext("/init", new InitHandler(db));
+        server.createContext("/send", new SendHandler(db));
+        server.createContext("/poll", new PullHandler(db));
         // creates a default executor
         server.setExecutor(null);
         return server;
@@ -31,6 +33,7 @@ public class Server {
         int port = scanner.nextInt();
 
         // start server
+        db = new DbWrapper();
         HttpServer s = initServer(port);
         s.start();
         System.out.println("Starting server. Type \'Exit\' to quit.");
