@@ -195,7 +195,49 @@ public class DbWrapper
         }
     }
 
-    private void updateUsersRow() {
+    private void updateUsersRow(String user_name) {
+        PreparedStatement updateusers;
+        try {
+            updateusers = conn.prepareStatement(
+                    "UPDATE users SET last_read = (SELECT mid FROM messages ORDER BY mid DESC LIMIT 1) WHERE username = ?");
+
+            statements.add(updateusers);
+            updateusers.setString(1, user_name);    // Set username
+            updateusers.executeUpdate();
+            System.out.println("Updated the user last read");
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+    }
+
+    private Message displayMesssage(String user_name){
+        Message msg;
+        ResultSet rs;
+        PreparedStatement getmessage;
+
+        try {
+            getmessage = conn.prepareStatement("SELECT userid, text, time  from messages WHERE mid >=(SELECT last_read from users WHERE username = ?) AS lastread");
+            //Storing message in result set
+            getmessage.setString(1,user_name);
+            rs = getmessage.executeQuery()
+            if (!rs.next())
+            {
+                reportFailure("No rows in ResultSet");
+            }
+            else{
+                while(rs.next()){
+                    //fetching messages(Add code here to enter values to message class object)
+                    System.out.println(rs.getInt(1) +" "+rs.getString(2)+" "+ rs.getString(3) );
+                    rs.next();
+                }
+            }
+            System.out.println("Sending messages to server");
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+
 
     }
 
