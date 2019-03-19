@@ -1,5 +1,26 @@
 package src;
 
+/*
+
+   Derby - Class SimpleApp
+
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+ */
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -11,21 +32,93 @@ import java.util.ArrayList;
 import java.util.Properties;
 
 
+/**
+ * <p>
+ * This sample program is a minimal Java application showing JDBC access to a
+ * Derby database.</p>
+ * <p>
+ * Instructions for how to run this program are
+ * given in <A HREF=example.html>example.html</A>, by default located in the
+ * same directory as this source file ($DERBY_HOME/demo/programs/simple/).</p>
+ * <p>
+ * Derby applications can run against Derby running in an embedded
+ * or a client/server framework.</p>
+ * <p>
+ * When Derby runs in an embedded framework, the JDBC application and Derby
+ * run in the same Java Virtual Machine (JVM). The application
+ * starts up the Derby engine.</p>
+ * <p>
+ * When Derby runs in a client/server framework, the application runs in a
+ * different JVM from Derby. The connectivity framework (in this case the Derby
+ * Network Server) provides network connections. The client driver is loaded
+ * automatically.</p>
+ */
 public class SimpleApp
 {
+    /* the default framework is embedded */
     private String framework = "embedded";
     private String protocol = "jdbc:derby:";
 
+    /**
+     * <p>
+     * Starts the demo by creating a new instance of this class and running
+     * the <code>go()</code> method.</p>
+     * <p>
+     * When you run this application, you may give one of the following
+     * arguments:
+     *  <ul>
+          <li><code>embedded</code> - default, if none specified. Will use
+     *        Derby's embedded driver. This driver is included in the derby.jar
+     *        file.</li>
+     *    <li><code>derbyclient</code> - will use the Derby client driver to
+     *        access the Derby Network Server. This driver is included in the
+     *        derbyclient.jar file.</li>
+     *  </ul>
+     * <p>
+     * When you are using a client/server framework, the network server must
+     * already be running when trying to obtain client connections to Derby.
+     * This demo program will will try to connect to a network server on this
+     * host (the localhost), see the <code>protocol</code> instance variable.
+     * </p>
+     * <p>
+     * When running this demo, you must include the correct driver in the
+     * classpath of the JVM. See <a href="example.html">example.html</a> for
+     * details.
+     * </p>
+     * @param args This program accepts one optional argument specifying which
+     *        connection framework (JDBC driver) to use (see above). The default
+     *        is to use the embedded JDBC driver.
+     */
     public static void main(String[] args)
     {
         new SimpleApp().go(args);
         System.out.println("SimpleApp finished");
     }
 
-
+    /**
+     * <p>
+     * Starts the actual demo activities. This includes creating a database by
+     * making a connection to Derby (automatically loading the driver),
+     * creating a table in the database, and inserting, updating and retrieving
+     * some data. Some of the retrieved data is then verified (compared) against
+     * the expected results. Finally, the table is deleted and, if the embedded
+     * framework is used, the database is shut down.</p>
+     * <p>
+     * Generally, when using a client/server framework, other clients may be
+     * (or want to be) connected to the database, so you should be careful about
+     * doing shutdown unless you know that no one else needs to access the
+     * database until it is rebooted. That is why this demo will not shut down
+     * the database unless it is running Derby embedded.</p>
+     *
+     * @param args - Optional argument specifying which framework or JDBC driver
+     *        to use to connect to Derby. Default is the embedded framework,
+     *        see the <code>main()</code> method for details.
+     * @see #main(String[])
+     */
     void go(String[] args)
     {
-
+        /* parse the arguments to determine which framework is desired*/
+        parseArguments(args);
 
         System.out.println("SimpleApp starting in " + framework + " mode");
 
@@ -60,23 +153,35 @@ public class SimpleApp
              * authentication, see the Derby Developer's Guide.
              */
 
-            String dbName = "Wysperdb"; // the name of the database
+            String dbName = "derbyDB"; // the name of the database
 
-
+            /*
+             * This connection specifies create=true in the connection URL to
+             * cause the database to be created when connecting for the first
+             * time. To remove the database, remove the directory derbyDB (the
+             * same as the database name) and its contents.
+             *
+             * The directory derbyDB will be created under the directory that
+             * the system property derby.system.home points to, or the current
+             * directory (user.dir) if derby.system.home is not set.
+             */
             conn = DriverManager.getConnection(protocol + dbName
                     + ";create=true", props);
 
             System.out.println("Connected to and created database " + dbName);
 
+            // We want to control transactions manually. Autocommit is on by
+            // default in JDBC.
             conn.setAutoCommit(false);
 
-
+            /* Creating a statement object that we can use for running various
+             * SQL statements commands against the database.*/
             s = conn.createStatement();
             statements.add(s);
 
             // We create a table...
-            s.execute("create table user_table(user_id int, pwd varchar(40))");
-            System.out.println("Created table user_table");
+            s.execute("create table location(num int, addr varchar(40))");
+            System.out.println("Created table location");
 
             // and add a few rows...
 
@@ -89,23 +194,23 @@ public class SimpleApp
              */
             // parameter 1 is num (int), parameter 2 is addr (varchar)
             psInsert = conn.prepareStatement(
-                        "insert into user_table values (?, ?)");
+                        "insert into location values (?, ?)");
             statements.add(psInsert);
 
-            psInsert.setInt(1, 1);
-            psInsert.setString(2, "xyz");
+            psInsert.setInt(1, 1956);
+            psInsert.setString(2, "Webster St.");
             psInsert.executeUpdate();
-            System.out.println("Inserted");
+            System.out.println("Inserted 1956 Webster");
 
-            psInsert.setInt(1, 2);
-            psInsert.setString(2, "efkjn");
+            psInsert.setInt(1, 1910);
+            psInsert.setString(2, "Union St.");
             psInsert.executeUpdate();
-            System.out.println("Inserted ");
+            System.out.println("Inserted 1910 Union");
 
             // Let's update some rows as well...
 
             // parameter 1 and 3 are num (int), parameter 2 is addr (varchar)
-            /*psUpdate = conn.prepareStatement(
+            psUpdate = conn.prepareStatement(
                         "update location set num=?, addr=? where num=?");
             statements.add(psUpdate);
 
@@ -126,7 +231,7 @@ public class SimpleApp
                We select the rows and verify the results.
              */
             rs = s.executeQuery(
-                    "SELECT * FROM user_table");
+                    "SELECT num, addr FROM location ORDER BY num");
 
             /* we expect the first returned column to be an integer (num),
              * and second to be a String (addr). Rows are sorted by street
@@ -148,14 +253,8 @@ public class SimpleApp
                 failure = true;
                 reportFailure("No rows in ResultSet");
             }
-            else{
-                while(rs.next()){
-                    System.out.println("The values are" + rs.getInt(1) + "and" + rs.getString(2));
-                    rs.next();
-                }
 
-            }
-            /*if ((number = rs.getInt(1)) != 300)
+            if ((number = rs.getInt(1)) != 300)
             {
                 failure = true;
                 reportFailure(

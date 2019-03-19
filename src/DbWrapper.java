@@ -23,7 +23,7 @@ public class DbWrapper
     private String protocol = "jdbc:derby:";
 
     private ArrayList<Statement> statements;
-    private Connection conn;
+    public Connection conn;
 
     /**
      * The main function demonstrates some basic functionality of our dbwrapper class
@@ -34,9 +34,10 @@ public class DbWrapper
     public static void main(String[] args)
     {
 
-        //new DbWrapper().go();
-        DbWrapper db = new DbWrapper();
 
+        DbWrapper db = new DbWrapper();
+        db.go(args);
+    /*
         db.insertUser("Corey");
         db.insertUser("Alex");
 
@@ -79,7 +80,25 @@ public class DbWrapper
         db.dropMessagesTable();
         db.dropUsersTable();
 
+        try {
+            DriverManager.getConnection("jdbc:derby:;shutdown=true");
 
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+
+        //Connection
+        try {
+            if (db.conn != null) {
+                db.conn.close();
+                db.conn = null;
+            }
+        } catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+
+        */
         System.out.println("SimpleApp finished");
     }
     /**
@@ -120,19 +139,27 @@ public class DbWrapper
     public DbWrapper() {
         String dbname = "wysperdb";
         try {
+            String driver = "org.apache.derby.jdbc.EmbeddedDriver";
+            Class.forName(driver).newInstance();
+        }
+        catch (Exception e) {
+            System.out.println(e);
+        }
+        try {
             this.conn = DriverManager.getConnection(protocol + dbname
-                    + ";create=true");
+                    + ";create=True");
 
             System.out.println("Created database " + dbname + " and connected");
 
             // We want to control transactions manually. Autocommit is on by
             // default in JDBC.
-            //conn.setAutoCommit(false);
+            conn.setAutoCommit(false);
 
             this.statements = new ArrayList<Statement>();
 
             this.createUsersTable();
             this.createMessagesTable();
+            this.conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -158,7 +185,7 @@ public class DbWrapper
                     "PRIMARY KEY(userid)" +
                     ")");
             System.out.println("Created table users");
-            conn.commit();
+            this.conn.commit();
 
         }
         catch (SQLException sqle) {
@@ -187,7 +214,7 @@ public class DbWrapper
                     "PRIMARY KEY(mid)" +
                     ")");
             System.out.println("Created table messages");
-            conn.commit();
+            this.conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -210,7 +237,7 @@ public class DbWrapper
             psInsert.setInt(2, 0);              // Set lastRead to 0
             psInsert.executeUpdate();
             System.out.println("Inserted " + username + " into users");
-            conn.commit();
+            this.conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -229,7 +256,8 @@ public class DbWrapper
         Timestamp time = msg.getTimestamp();
         String text = msg.getBody();
 
-        PreparedStatement psInsert;
+        PreparedStatement psInsert, countMessages;
+        ResultSet rs;
         try {
             psInsert = conn.prepareStatement(
                     "insert into messages (username, time, text) values (?, ?, ?)");
@@ -239,9 +267,29 @@ public class DbWrapper
             psInsert.setTimestamp(2, time); // Set timestamp
             psInsert.setString(3, text);    // Set message body
             psInsert.executeUpdate();
-            conn.commit();
+            this.conn.commit();
 
-            System.out.println("Inserted \"" + text + "\" into messages");
+            //System.out.println("After insert, psInsert is: " + psInsert);
+
+
+            countMessages = conn.prepareStatement(
+                    "select count(*) from messages");
+            statements.add(countMessages);
+
+            rs = countMessages.executeQuery();
+            int count = 0;
+            while (rs.next()) {
+                count = rs.getInt(1);
+                rs.next();
+            }
+            if (rs != null) {
+                rs.close();
+                rs = null;
+            }
+
+            System.out.println("Inserted \"" + text + "\" into messages, total is now: " + count);
+            this.conn.commit();
+
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -256,7 +304,6 @@ public class DbWrapper
         for (Message msg : msgs) {
             insertMessage(msg);
         }
-
     }
 
 
@@ -265,7 +312,8 @@ public class DbWrapper
      * @param user_name, the user to update
      */
     public void updateUsersRow(String user_name) {
-        PreparedStatement updateusers;
+        PreparedStatement updateusers, checkUser;
+        ResultSet rs;
         try {
             //updateusers = conn.prepareStatement(
                     //"UPDATE users SET last_read = (SELECT mid FROM messages ORDER BY mid DESC LIMIT 1) WHERE username = ?");
@@ -275,9 +323,24 @@ public class DbWrapper
             statements.add(updateusers);
             updateusers.setString(1, user_name);    // Set username
             updateusers.executeUpdate();
-            System.out.println("Updated the user last read");
-            conn.commit();
+            System.out.println("Updating last read for user " + user_name);
+            this.conn.commit();
 
+            checkUser = conn.prepareStatement("Select last_read from users where username= ? ");
+            statements.add(checkUser);
+            checkUser.setString(1, user_name);
+            int last_read = 0;
+            rs = checkUser.executeQuery();
+            while (rs.next()) {
+                last_read = rs.getInt(1);
+                rs.next();
+            }
+            System.out.println("User last read is now: " + last_read);
+
+            if (rs != null) {
+                rs.close();
+                rs = null;
+            }
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -314,6 +377,9 @@ public class DbWrapper
         catch (SQLException sqle) {
             printSQLException(sqle);
         }
+
+        updateUsersRow(user_name);
+
     }
 
     private void updateMessagesRow() {
@@ -369,6 +435,7 @@ public class DbWrapper
 
             // Finally we should update the user to reflect that they have read up to the most recent message
 
+            /*
             // First get the most recent message id
             getMostRecentID = conn.prepareStatement("select max(mid) from messages");
             rs = getMostRecentID.executeQuery();
@@ -378,7 +445,7 @@ public class DbWrapper
                 rs.next();
 
 
-            /*
+
             // Next set the users last_read to this id
             updateUser = conn.prepareStatement("update users set last_read = ? where username = ?");
             updateUser.setInt(1, mostRecentID);
@@ -390,14 +457,16 @@ public class DbWrapper
                 rs = null;
             }
             */
-            updateUsersRow(username);
 
             if (rs != null) {
                 rs.close();
                 rs = null;
             }
 
-            conn.commit();
+            this.conn.commit();
+            updateUsersRow(username);
+
+
 
 
         }
@@ -417,7 +486,7 @@ public class DbWrapper
             // delete the table
             s.execute("drop table users");
             System.out.println("Dropped table users");
-            conn.commit();
+            this.conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -435,7 +504,7 @@ public class DbWrapper
             // delete the table
             s.execute("drop table messages");
             System.out.println("Dropped table messages");
-            conn.commit();
+            this.conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
