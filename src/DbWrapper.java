@@ -2,6 +2,7 @@ package src;
 
 import java.sql.*;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Properties;
 
@@ -32,14 +33,53 @@ public class DbWrapper
      */
     public static void main(String[] args)
     {
+
         //new DbWrapper().go();
         DbWrapper db = new DbWrapper();
-        db.createUsersTable();
-        db.createMessagesTable();
+
         db.insertUser("Corey");
-        db.insertMessage();
+        db.insertUser("Alex");
+
+        Message msg = new Message("Corey", "Hello");
+        Message msg2 = new Message("Alex", "Hello");
+        Message msg3 = new Message("Corey", "SDD is fun!");
+        Message msg4 = new Message("Corey", "Hello3");
+        Message msg5 = new Message("Corey", "Hello4");
+
+
+
+        db.insertMessage(msg);
+        db.insertMessage(msg2);
+        db.insertMessage(msg3);
+        db.insertMessage(msg4);
+        db.insertMessage(msg5);
+
+        System.out.println("On first call: ");
+        ArrayList<Message> ret = db.getMessages("Corey");
+        if (ret == null) {
+            System.out.println("No messages found");
+        }
+        else {
+            for (Message tmp : ret) {
+                System.out.println(tmp);
+            }
+        }
+
+        System.out.println("On second call: ");
+        ret = db.getMessages("Corey");
+        if (ret == null) {
+            System.out.println("No messages found");
+        }
+        else {
+            for (Message tmp : ret) {
+                System.out.println(tmp);
+            }
+        }
+
         db.dropMessagesTable();
         db.dropUsersTable();
+
+
         System.out.println("SimpleApp finished");
     }
     /**
@@ -87,9 +127,12 @@ public class DbWrapper
 
             // We want to control transactions manually. Autocommit is on by
             // default in JDBC.
-            conn.setAutoCommit(false);
+            //conn.setAutoCommit(false);
 
             this.statements = new ArrayList<Statement>();
+
+            this.createUsersTable();
+            this.createMessagesTable();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -107,13 +150,16 @@ public class DbWrapper
             statements.add(s);
 
             // TODO: Should check here if the tables are already created
+            // TODO: How long can a username be?
             s.execute("create table users(" +
-                    "userid int NOT NULL GENERATED ALWAYS AS IDENTITY, " +
+                    "userid int NOT NULL GENERATED ALWAYS AS IDENTITY (Start with 1), " +
                     "username varchar(30)," +
                     "last_read int," +
                     "PRIMARY KEY(userid)" +
                     ")");
             System.out.println("Created table users");
+            conn.commit();
+
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -135,11 +181,13 @@ public class DbWrapper
             s.execute("create table messages(" +
                     "mid int NOT NULL GENERATED ALWAYS AS IDENTITY, " +
                     "userid int, " +
+                    "username varchar(30), " +
                     "time timestamp, " +
                     "text varchar(255), " +
                     "PRIMARY KEY(mid)" +
                     ")");
             System.out.println("Created table messages");
+            conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -150,17 +198,19 @@ public class DbWrapper
      * This function adds a new user to the database
      * @param username the user to add to the db
      */
-    private void insertUser(String username) {
+    public void insertUser(String username) {
         PreparedStatement psInsert;
+
         try {
             psInsert = conn.prepareStatement(
                     "insert into users (username, last_read) values (?, ?)");
             statements.add(psInsert);
 
-            psInsert.setString(1, username);     // Set username to corey
+            psInsert.setString(1, username);       // Set username to corey
             psInsert.setInt(2, 0);              // Set lastRead to 0
             psInsert.executeUpdate();
             System.out.println("Inserted " + username + " into users");
+            conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -173,21 +223,24 @@ public class DbWrapper
      * In wysper-server, we have a Message object that helps pass messages around,
      * but I'm not sure how you want to implement that Trevor so I'll leave it like this
      */
-    private void insertMessage() {
-        int userid = 20;
-        Timestamp time = new Timestamp(System.currentTimeMillis());
-        String text = "Whats up";
+    public void insertMessage(Message msg) {
+        String username = msg.getUsername();
+
+        Timestamp time = msg.getTimestamp();
+        String text = msg.getBody();
 
         PreparedStatement psInsert;
         try {
             psInsert = conn.prepareStatement(
-                    "insert into messages (userid, time, text) values (?, ?, ?)");
+                    "insert into messages (username, time, text) values (?, ?, ?)");
             statements.add(psInsert);
 
-            psInsert.setInt(1, userid);     // Set userid
+            psInsert.setString(1, username);     // Set username
             psInsert.setTimestamp(2, time); // Set timestamp
             psInsert.setString(3, text);    // Set message body
             psInsert.executeUpdate();
+            conn.commit();
+
             System.out.println("Inserted \"" + text + "\" into messages");
         }
         catch (SQLException sqle) {
@@ -195,23 +248,43 @@ public class DbWrapper
         }
     }
 
-    private void updateUsersRow(String user_name) {
+    /**
+     * Saves messages to the database using the insertMessage function
+     * @param msgs a list of messages to save
+     */
+    public void insertMessages(ArrayList<Message> msgs) {
+        for (Message msg : msgs) {
+            insertMessage(msg);
+        }
+
+    }
+
+
+    /**
+     * Updates the last read for the user to the latest message in the messages table
+     * @param user_name, the user to update
+     */
+    public void updateUsersRow(String user_name) {
         PreparedStatement updateusers;
         try {
+            //updateusers = conn.prepareStatement(
+                    //"UPDATE users SET last_read = (SELECT mid FROM messages ORDER BY mid DESC LIMIT 1) WHERE username = ?");
             updateusers = conn.prepareStatement(
-                    "UPDATE users SET last_read = (SELECT mid FROM messages ORDER BY mid DESC LIMIT 1) WHERE username = ?");
+                    "UPDATE users SET last_read = (SELECT max(mid) FROM messages) WHERE username = ?");
 
             statements.add(updateusers);
             updateusers.setString(1, user_name);    // Set username
             updateusers.executeUpdate();
             System.out.println("Updated the user last read");
+            conn.commit();
+
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
         }
     }
 
-    private Message displayMesssage(String user_name){
+    public void displayMesssage(String user_name){
         Message msg;
         ResultSet rs;
         PreparedStatement getmessage;
@@ -220,7 +293,7 @@ public class DbWrapper
             getmessage = conn.prepareStatement("SELECT userid, text, time  from messages WHERE mid >=(SELECT last_read from users WHERE username = ?) AS lastread");
             //Storing message in result set
             getmessage.setString(1,user_name);
-            rs = getmessage.executeQuery()
+            rs = getmessage.executeQuery();
             if (!rs.next())
             {
                 reportFailure("No rows in ResultSet");
@@ -233,16 +306,103 @@ public class DbWrapper
                 }
             }
             System.out.println("Sending messages to server");
+            if (rs != null) {
+                rs.close();
+                rs = null;
+            }
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
         }
-
-
     }
 
     private void updateMessagesRow() {
 
+    }
+
+    /**
+     * Returns a list of message objects that are unread by username
+     * @param username the user to get messages for
+     */
+    public ArrayList<Message> getMessages(String username) {
+        ArrayList<Message> ret = new ArrayList<>();
+        ResultSet rs;
+        PreparedStatement getMessage, getUser, updateUser, getMostRecentID;
+        int userid = 0, last_read = 0, mostRecentID = 0;
+
+        try {
+            // First this function needs to query the users database and get
+            // the last_read messageid of the given user
+            getUser = conn.prepareStatement("select userid, username, last_read from users where username = ?");
+            getUser.setString(1, username);
+            rs = getUser.executeQuery();
+            if (!rs.next()) {
+                reportFailure("No users with username: " + username);
+                return null;
+            }
+            while(rs.next()) {
+                userid = rs.getInt(1);
+                last_read = rs.getInt(3);
+                rs.next();
+            }
+
+            // Next we query the messages table and get the unread messages for this user
+            getMessage = conn.prepareStatement("SELECT username, text, time  from messages WHERE mid >= ?");
+            getMessage.setInt(1,last_read);
+
+            rs = getMessage.executeQuery();
+
+            if (!rs.next()) {
+                reportFailure("No new messages to read");
+            }
+            else {
+                // As we receive a message, we put it in a new message object and add it to the ret array
+                int i = 0;
+                while (rs.next()) {
+                    Message msg = new Message(rs.getString(1), rs.getString(2), rs.getTimestamp(3));
+                    ret.add(msg);
+                    rs.next();
+                }
+            }
+
+            // Finally we should update the user to reflect that they have read up to the most recent message
+
+            // First get the most recent message id
+            getMostRecentID = conn.prepareStatement("select max(mid) from messages");
+            rs = getMostRecentID.executeQuery();
+            rs.next();
+            mostRecentID = rs.getInt(1);
+            while (rs.next())
+                rs.next();
+
+
+            /*
+            // Next set the users last_read to this id
+            updateUser = conn.prepareStatement("update users set last_read = ? where username = ?");
+            updateUser.setInt(1, mostRecentID);
+            updateUser.setString(2, username);
+            int res = updateUser.executeUpdate();
+
+            if (rs != null) {
+                rs.close();
+                rs = null;
+            }
+            */
+            updateUsersRow(username);
+
+            if (rs != null) {
+                rs.close();
+                rs = null;
+            }
+
+            conn.commit();
+
+
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+        return ret;
     }
 
     /**
@@ -255,10 +415,12 @@ public class DbWrapper
             // delete the table
             s.execute("drop table users");
             System.out.println("Dropped table users");
+            conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
         }
+
     }
 
     /**
@@ -271,6 +433,7 @@ public class DbWrapper
             // delete the table
             s.execute("drop table messages");
             System.out.println("Dropped table messages");
+            conn.commit();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
