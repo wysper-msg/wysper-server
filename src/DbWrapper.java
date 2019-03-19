@@ -346,6 +346,8 @@ public class DbWrapper
                 rs.next();
             }
 
+            System.out.println("Last read for " + username + " is " + last_read);
+
             // Next we query the messages table and get the unread messages for this user
             getMessage = conn.prepareStatement("SELECT username, text, time  from messages WHERE mid >= ?");
             getMessage.setInt(1,last_read);
