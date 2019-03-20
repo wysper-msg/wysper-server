@@ -4,6 +4,9 @@
 # Log file
 *.log
 
+Wysperdb/*
+derbyDB/*
+
 # BlueJ files
 *.ctxt
 
