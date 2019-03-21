@@ -49,7 +49,7 @@ public class Message{
             this.username = j.get("username").toString();
         }
         if (j.containsKey("timestamp")) {
-            this.timestamp = (Timestamp) j.get("timestamp");
+            this.timestamp = Timestamp.valueOf(j.get("timestamp").toString());
         }
         else {
             this.timestamp = new Timestamp(System.currentTimeMillis());
@@ -57,7 +57,6 @@ public class Message{
         if (j.containsKey("body")) {
             this.body = j.get("body").toString();
         }
-
     }
 
     /**

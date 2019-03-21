@@ -1,9 +1,11 @@
 package src;
 
-import org.json.simple.*;
+import java.util.ArrayList;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+
+import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -21,7 +23,7 @@ abstract class Handler implements HttpHandler {
 
     DbWrapper database;
 
-    public Handler(DbWrapper db) {
+    Handler(DbWrapper db) {
         database = db;
     }
 
@@ -36,11 +38,7 @@ abstract class Handler implements HttpHandler {
             // read request data
             BufferedReader reqReader = new BufferedReader(new InputStreamReader(t.getRequestBody(), StandardCharsets.UTF_8));
             String temp;
-            StringBuilder req = new StringBuilder();implement user database connection:
-        // Get user ID from request
-        // Access user DB to identify which message was sent last
-        // collect all messages newer than this
-        // aggregate in JSONArray, return as string
+            StringBuilder req = new StringBuilder();
             while((temp = reqReader.readLine()) != null) {
                 req.append(temp);
             }
@@ -107,7 +105,7 @@ class InitHandler extends Handler {
 
     private int mostRecentMessages = 50;
 
-    public InitHandler(DbWrapper db) {
+    InitHandler(DbWrapper db) {
         super(db);
     }
 
@@ -118,9 +116,24 @@ class InitHandler extends Handler {
      * @return - JSON array containing a number of most recent messages
      * @throws ParseException - if JSON request is malformed
      */
-    protected String accessDB(String req) {
-        // TODO: return "mostRecentMessages" number of messages
-        return "";
+    protected String accessDB(String req) throws ParseException {
+
+        // insert username into database
+        database.insertUser(req);
+
+        ArrayList<Message> newMessages = new ArrayList<>();
+
+        // convert ArrayList to JSONArray
+        JSONArray newMsgJson = new JSONArray();
+        for(Message msg : newMessages) {
+            newMsgJson.add(msg.toJSON());
+        }
+        // add JSONArray to a JSONObject
+        JSONObject response = new JSONObject();
+        response.put("messages", newMsgJson);
+
+       // send JSON array to client
+        return response.toString();
     }
 }
 
@@ -130,7 +143,7 @@ class InitHandler extends Handler {
  */
 class SendHandler extends Handler {
 
-    public SendHandler(DbWrapper db) {
+    SendHandler(DbWrapper db) {
         super(db);
     }
 
@@ -142,9 +155,15 @@ class SendHandler extends Handler {
      * @throws ParseException - if JSON request is malformed
      */
     protected String accessDB(String req) throws ParseException {
-        JSONObject json = parse(req);
-        // TODO: add message to database
 
+        // parse JSON request
+        JSONObject json = parse(req);
+        // convert JSON into Message object
+        Message msg = new Message(json);
+        // add message to database
+        database.insertMessage(msg);
+
+        // empty string means success
         return "";
     }
 }
@@ -154,7 +173,7 @@ class SendHandler extends Handler {
  */
 class PullHandler extends Handler {
 
-    public PullHandler(DbWrapper db) {
+    PullHandler(DbWrapper db) {
         super(db);
     }
 
@@ -166,8 +185,21 @@ class PullHandler extends Handler {
      * @return - JSON array containing a number of most recent messages
      * @throws ParseException - if JSON request is malformed
      */
-    protected String accessDB(String req) {
-        // TODO: return all messages newer than given user's most recently viewed message
-        return "";
+    protected String accessDB(String req) throws ParseException {
+
+        // get an ArrayList of new messages this user has not seen
+        ArrayList<Message> newMessages = database.getMessages(req);
+
+        // convert ArrayList to JSONArray
+        JSONArray newMsgJson = new JSONArray();
+        for(Message msg : newMessages) {
+            newMsgJson.add(msg.toJSON());
+        }
+        // add JSONArray to a JSONObject
+        JSONObject response = new JSONObject();
+        response.put("messages", newMsgJson);
+
+        // send JSON array to client
+        return response.toString();
     }
 }
