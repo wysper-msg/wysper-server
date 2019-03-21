@@ -433,7 +433,7 @@ public class DbWrapper
         try {
             // First this function needs to query the users database and get
             // the last_read messageid of the given user
-            last_read =  this.getLastRead("Corey");
+            last_read =  this.getLastRead(username);
             System.out.println("Last read for " + username + " is " + last_read);
 
             // Next we query the messages table and get the unread messages for this user
@@ -443,7 +443,7 @@ public class DbWrapper
             rs = getMessage.executeQuery();
 
             if (!rs.next()) {
-                return null;
+                return ret;
             }
             else {
                 // As we receive a message, we put it in a new message object and add it to the ret array

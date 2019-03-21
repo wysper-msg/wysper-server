@@ -1,9 +1,11 @@
 package src;
 
-import org.json.simple.*;
+import java.util.ArrayList;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+
+import org.json.simple.*;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -18,6 +20,12 @@ import java.nio.charset.StandardCharsets;
  * and accessing the database as necessary. Intended to be extended by other classes.
  */
 abstract class Handler implements HttpHandler {
+
+    DbWrapper database;
+
+    Handler(DbWrapper db) {
+        database = db;
+    }
 
     /**
      * Handle requests from clients and access the database
@@ -97,6 +105,10 @@ class InitHandler extends Handler {
 
     private int mostRecentMessages = 50;
 
+    InitHandler(DbWrapper db) {
+        super(db);
+    }
+
     /**
      * Get a constant number of most recent messages from the database
      *
@@ -104,9 +116,24 @@ class InitHandler extends Handler {
      * @return - JSON array containing a number of most recent messages
      * @throws ParseException - if JSON request is malformed
      */
-    protected String accessDB(String req) {
-        // TODO: return n most recent messages
-        return "";
+    protected String accessDB(String req) throws ParseException {
+
+        // insert username into database
+        database.insertUser(req);
+
+        ArrayList<Message> newMessages = new ArrayList<>();
+
+        // convert ArrayList to JSONArray
+        JSONArray newMsgJson = new JSONArray();
+        for(Message msg : newMessages) {
+            newMsgJson.add(msg.toJSON());
+        }
+        // add JSONArray to a JSONObject
+        JSONObject response = new JSONObject();
+        response.put("messages", newMsgJson);
+
+       // send JSON array to client
+        return response.toString();
     }
 }
 
@@ -116,6 +143,10 @@ class InitHandler extends Handler {
  */
 class SendHandler extends Handler {
 
+    SendHandler(DbWrapper db) {
+        super(db);
+    }
+
     /**
      * Put a new message in the database
      *
@@ -124,9 +155,15 @@ class SendHandler extends Handler {
      * @throws ParseException - if JSON request is malformed
      */
     protected String accessDB(String req) throws ParseException {
+
+        // parse JSON request
         JSONObject json = parse(req);
-        // TODO: store JSON data in message database
-        System.out.println(json.get("username") + ": " + json.get("body"));
+        // convert JSON into Message object
+        Message msg = new Message(json);
+        // add message to database
+        database.insertMessage(msg);
+
+        // empty string means success
         return "";
     }
 }
@@ -136,6 +173,10 @@ class SendHandler extends Handler {
  */
 class PullHandler extends Handler {
 
+    PullHandler(DbWrapper db) {
+        super(db);
+    }
+
     /**
      * Get all the messages in the database that were sent since the
      * last time this user requested new messages
@@ -144,12 +185,21 @@ class PullHandler extends Handler {
      * @return - JSON array containing a number of most recent messages
      * @throws ParseException - if JSON request is malformed
      */
-    protected String accessDB(String req) {
-        // TODO: implement user database connection:
-        // Get user ID from request
-        // Access user DB to identify which message was sent last
-        // collect all messages newer than this
-        // aggregate in JSONArray, return as string
-        return "";
+    protected String accessDB(String req) throws ParseException {
+
+        // get an ArrayList of new messages this user has not seen
+        ArrayList<Message> newMessages = database.getMessages(req);
+
+        // convert ArrayList to JSONArray
+        JSONArray newMsgJson = new JSONArray();
+        for(Message msg : newMessages) {
+            newMsgJson.add(msg.toJSON());
+        }
+        // add JSONArray to a JSONObject
+        JSONObject response = new JSONObject();
+        response.put("messages", newMsgJson);
+
+        // send JSON array to client
+        return response.toString();
     }
 }
