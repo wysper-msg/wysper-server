@@ -113,7 +113,7 @@ public class DbWrapper
             if (( (se.getErrorCode() == 50000)
                     && ("XJ015".equals(se.getSQLState()) ))) {
                 // we got the expected exception
-                // System.out.println("Derby shut down normally");
+                System.out.println("Derby shut down normally");
                 // Note that for single database shutdown, the expected
                 // SQL state is "08006", and the error code is 45000.
             } else {
@@ -205,7 +205,7 @@ public class DbWrapper
                     "last_read int," +
                     "PRIMARY KEY(userid)" +
                     ")");
-            // System.out.println("Created table users");
+            System.out.println("Created table users");
             this.conn.commit();
         }
         catch (SQLException sqle) {
@@ -261,7 +261,7 @@ public class DbWrapper
                     "text varchar(255), " +
                     "PRIMARY KEY(mid)" +
                     ")");
-            // System.out.println("Created table messages");
+            System.out.println("Created table messages");
             this.conn.commit();
         }
         catch (SQLException sqle) {
@@ -312,7 +312,7 @@ public class DbWrapper
             psInsert.setString(1, username);       // Set username to corey
             psInsert.setInt(2, 0);              // Set lastRead to 0
             psInsert.executeUpdate();
-            // System.out.println("Inserted " + username + " into users");
+            System.out.println("Inserted " + username + " into users");
             this.conn.commit();
         }
         catch (SQLException sqle) {
@@ -374,7 +374,7 @@ public class DbWrapper
             statements.add(updateusers);
             updateusers.setString(1, user_name);    // Set username
             int updated = updateusers.executeUpdate();
-            //System.out.printf("Updating last_read for (%d) user(s) %s\n",updated, user_name);
+            System.out.printf("Updating last_read for (%d) user(s) %s\n",updated, user_name);
             this.conn.commit();
         }
         catch (SQLException sqle) {
@@ -398,10 +398,10 @@ public class DbWrapper
             else{
                 while(rs.next()){
                     //fetching messages(Add code here to enter values to message class object)
-                    // System.out.println(rs.getInt(1) +" "+rs.getString(2)+" "+ rs.getString(3) );
+                    System.out.println(rs.getInt(1) +" "+rs.getString(2)+" "+ rs.getString(3) );
                 }
             }
-            // System.out.println("Sending messages to server");
+            System.out.println("Sending messages to server");
             if (rs != null) {
                 rs.close();
                 rs = null;
@@ -434,7 +434,7 @@ public class DbWrapper
             // First this function needs to query the users database and get
             // the last_read messageid of the given user
             last_read =  this.getLastRead(username);
-            // System.out.println("Last read for " + username + " is " + last_read);
+            System.out.println("Last read for " + username + " is " + last_read);
 
             // Next we query the messages table and get the unread messages for this user
             getMessage = conn.prepareStatement("SELECT username, text, time, mid  from messages WHERE mid > ?");
@@ -478,7 +478,7 @@ public class DbWrapper
             statements.add(s);
             // delete the table
             s.execute("drop table users");
-            // System.out.println("Dropped table users");
+            System.out.println("Dropped table users");
             this.conn.commit();
         }
         catch (SQLException sqle) {
@@ -495,7 +495,7 @@ public class DbWrapper
             statements.add(s);
             // delete the table
             s.execute("drop table messages");
-            // System.out.println("Dropped table messages");
+            System.out.println("Dropped table messages");
             this.conn.commit();
         }
         catch (SQLException sqle) {
