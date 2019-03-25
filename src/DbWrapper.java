@@ -376,7 +376,7 @@ public class DbWrapper
             statements.add(updateusers);
             updateusers.setString(1, user_name);    // Set username
             int updated = updateusers.executeUpdate();
-            System.out.printf("Updating last_read for (%d) user(s) %s\n",updated, user_name);
+            // System.out.printf("Updating last_read for (%d) user(s) %s\n",updated, user_name);
             this.conn.commit();
         }
         catch (SQLException sqle) {
@@ -419,7 +419,7 @@ public class DbWrapper
     public void displayAll(){
         ResultSet rs;
         PreparedStatement getmessage;
-        System.out.println("userid, message id, text, time");
+        System.out.println(String.format("%7s %10s %25s %25s", "userid", "messageid", "text", "time"));
         try {
             getmessage = conn.prepareStatement("SELECT userid, mid, text, time  from messages");
             //Storing message in result set
@@ -430,10 +430,11 @@ public class DbWrapper
             else{
                 while(rs.next()){
                     //fetching messages(Add code here to enter values to message class object)
-                    System.out.println(rs.getInt(1) +", "+rs.getInt(2)+" ,"+rs.getString(3)+", "+ rs.getString(4) );
+                    System.out.println(String.format("%7s %10s %25s %25s",
+                            rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4)));
                 }
             }
-            System.out.println("Sending messages to server");
+            //System.out.println("Sending messages to server");
             if (rs != null) {
                 rs.close();
                 rs = null;
