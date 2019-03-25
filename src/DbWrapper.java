@@ -1,6 +1,6 @@
 package src;
 
-
+import java.lang.Class;
 import java.sql.*;
 
 import java.util.ArrayList;
@@ -85,11 +85,13 @@ public class DbWrapper
                 System.out.println(tmp);
             }
         }
+        db.displayAll();
 
         // Finally cleanup the database
         db.cleanup(true);
 
         System.out.println("Sample app finished!");
+
     }
 
     /**
@@ -201,7 +203,7 @@ public class DbWrapper
             // TODO: Should check here if the tables are already created
             s.execute("create table users(" +
                     "userid int NOT NULL GENERATED ALWAYS AS IDENTITY (Start with 1), " +
-                    "username varchar(30)," +
+                    "username varchar(30) UNIQUE," +
                     "last_read int," +
                     "PRIMARY KEY(userid)" +
                     ")");
@@ -413,6 +415,33 @@ public class DbWrapper
 
         updateUsersLastRead(user_name);
 
+    }
+    public void displayAll(){
+        ResultSet rs;
+        PreparedStatement getmessage;
+        System.out.println("userid, message id, text, time");
+        try {
+            getmessage = conn.prepareStatement("SELECT userid, mid, text, time  from messages");
+            //Storing message in result set
+            rs = getmessage.executeQuery();
+            if (!rs.next()) {
+                reportFailure("No rows in ResultSet");
+            }
+            else{
+                while(rs.next()){
+                    //fetching messages(Add code here to enter values to message class object)
+                    System.out.println(rs.getInt(1) +", "+rs.getInt(2)+" ,"+rs.getString(3)+", "+ rs.getString(4) );
+                }
+            }
+            System.out.println("Sending messages to server");
+            if (rs != null) {
+                rs.close();
+                rs = null;
+            }
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
     }
 
     private void updateMessagesRow() {
