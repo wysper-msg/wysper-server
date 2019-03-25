@@ -64,7 +64,7 @@ public class Server {
         while (command == null || !command.equals("Exit")) {
             command = scanner.nextLine();
             if (command.equals("ShowMessages")) {
-                // TODO: show messages sorted by ID (for Interim Release)
+                db.displayAll();
            }
         }
 
