@@ -318,7 +318,7 @@ public class DbWrapper
             this.conn.commit();
         }
         catch (SQLException sqle) {
-            printSQLException(sqle);
+            //printSQLException(sqle);
         }
     }
 
@@ -489,6 +489,56 @@ public class DbWrapper
             if (rs.next())
                 rs.close();
                 rs = null;
+
+            // Finally we should update the user to reflect that they have read up to the most recent message
+            updateUsersLastRead(username);
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+        return ret;
+    }
+
+    /**
+     * Returns a list of message objects that are unread by username
+     * @param username the user to get messages for
+     */
+    public ArrayList<Message> getHistory(String username) {
+
+        ArrayList<Message> ret = new ArrayList<>();
+        ResultSet rs;
+        PreparedStatement getMessage;
+        int last_read = 0;
+
+        try {
+            // First this function needs to query the users database and get
+            // the last_read messageid of the given user
+            last_read =  this.getLastRead(username);
+            // System.out.println("Last read for " + username + " is " + last_read);
+
+            // Next we query the messages table and get the unread messages for this user
+            getMessage = conn.prepareStatement("SELECT username, text, time, mid  from messages");
+   //         getMessage.setInt(1,last_read);
+
+            rs = getMessage.executeQuery();
+
+            if (!rs.next()) {
+                return ret;
+            }
+            else {
+                // As we receive a message, we put it in a new message object and add it to the ret array
+                int i = 0;
+                Message msg = new Message(rs.getString(1), rs.getString(2), rs.getTimestamp(3));
+                ret.add(msg);
+                while (rs.next()) {
+                    msg = new Message(rs.getString(1), rs.getString(2), rs.getTimestamp(3));
+                    ret.add(msg);
+                }
+            }
+
+            if (rs.next())
+                rs.close();
+            rs = null;
 
             // Finally we should update the user to reflect that they have read up to the most recent message
             updateUsersLastRead(username);
