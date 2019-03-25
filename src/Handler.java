@@ -121,7 +121,7 @@ class InitHandler extends Handler {
         // insert username into database
         database.insertUser(req);
 
-        ArrayList<Message> newMessages = new ArrayList<>();
+        ArrayList<Message> newMessages = database.getHistory(req);
 
         // convert ArrayList to JSONArray
         JSONArray newMsgJson = new JSONArray();
