@@ -318,7 +318,11 @@ public class DbWrapper
             this.conn.commit();
         }
         catch (SQLException sqle) {
-            //printSQLException(sqle);
+            if (sqle.getErrorCode() == 20000) {
+                System.out.printf("Did not add user %s, already exists in table\n", username);
+                return;
+            }
+            printSQLException(sqle);
         }
     }
 
