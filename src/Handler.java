@@ -120,7 +120,7 @@ class InitHandler extends Handler {
 
         // insert username into database
         database.insertUser(req);
-
+        // get message history
         ArrayList<Message> newMessages = database.getHistory(req);
 
         // convert ArrayList to JSONArray
@@ -160,6 +160,8 @@ class SendHandler extends Handler {
         JSONObject json = parse(req);
         // convert JSON into Message object
         Message msg = new Message(json);
+        // insert user, just as a safeguard
+        database.insertUser(msg.getUsername());
         // add message to database
         database.insertMessage(msg);
 
