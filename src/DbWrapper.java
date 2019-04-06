@@ -200,7 +200,6 @@ public class DbWrapper
             s = this.conn.createStatement();
             statements.add(s);
 
-            // TODO: Should check here if the tables are already created
             s.execute("create table users(" +
                     "userid int NOT NULL GENERATED ALWAYS AS IDENTITY (Start with 1), " +
                     "username varchar(30) UNIQUE," +
@@ -211,6 +210,10 @@ public class DbWrapper
             this.conn.commit();
         }
         catch (SQLException sqle) {
+            if (sqle.getErrorCode() == 20000) {
+                System.out.println("users table found");
+                return;
+            }
             printSQLException(sqle);
         }
 
@@ -253,7 +256,6 @@ public class DbWrapper
             s = this.conn.createStatement();
             statements.add(s);
 
-            // TODO: Should check here if the tables are already created
             // TODO: how big should message body be?
             s.execute("create table messages(" +
                     "mid int NOT NULL GENERATED ALWAYS AS IDENTITY, " +
@@ -267,6 +269,10 @@ public class DbWrapper
             this.conn.commit();
         }
         catch (SQLException sqle) {
+            if (sqle.getErrorCode() == 20000) {
+                System.out.println("messages table found");
+                return;
+            }
             printSQLException(sqle);
         }
     }
@@ -319,7 +325,6 @@ public class DbWrapper
         }
         catch (SQLException sqle) {
             if (sqle.getErrorCode() == 20000) {
-                System.out.printf("Did not add user %s, already exists in table\n", username);
                 return;
             }
             printSQLException(sqle);
