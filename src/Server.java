@@ -30,12 +30,12 @@ public class Server {
 
         String choice = scanner.nextLine();
         do {
-            System.out.print("Save this session's messages? (y/n) (default y): ");
+            System.out.print("Permanently delete data on shutdown? (y/n) (default n): ");
             choice = scanner.nextLine();
 
         } while (!(choice.equals("y") || choice.equals("n") || choice.equals("")));
 
-        if (choice.equals("y") || choice.equals("")) {
+        if (choice.equals("n") || choice.equals("")) {
             dropTables = false;
         }
         else {
