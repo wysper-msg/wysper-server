@@ -509,6 +509,41 @@ public class DbWrapper
     }
 
     /**
+     * Get a specific number of recent messages from the database
+     * @param n the number of messages to get
+     * @return ArrayList of message objects
+     */
+    public ArrayList<Message> getNMessages(int n){
+        ArrayList<Message> ret = new ArrayList<>();
+        ResultSet rs;
+        PreparedStatement getmessage;
+        try {
+            getmessage = conn.prepareStatement("SELECT username, mid, text, time  from messages ORDER BY mid DESC");
+            //Storing message in result set
+            rs = getmessage.executeQuery();
+            if (!rs.next()) {
+                return ret;
+            }
+            else{
+                Message msg = new Message(rs.getString(1),rs.getString(3), rs.getTimestamp(4));
+                ret.add(msg);
+                while (rs.next()&& n>1) {
+                    msg = new Message(rs.getString(1), rs.getString(3), rs.getTimestamp(4));
+                    ret.add(msg);
+                    n--;
+                }
+            }
+            if (rs != null) {
+                rs.close();
+            }
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+        return ret;
+    }
+
+    /**
      * Returns a list of message objects that are unread by username
      * @param username the user to get messages for
      */

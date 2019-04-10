@@ -19,6 +19,7 @@ public class Server {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         // initialize connection URLs
         server.createContext("/init", new InitHandler(db));
+        server.createContext("/getn", new NMesgHandler(db));
         server.createContext("/send", new SendHandler(db));
         server.createContext("/poll", new PullHandler(db));
         // creates a default executor
