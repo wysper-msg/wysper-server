@@ -1,19 +1,11 @@
 package src;
 
-import java.lang.Class;
 import java.sql.*;
-
 import java.util.ArrayList;
-
+import java.util.Collections;
 
 /**
  * DbWrapper abstracts all necessary DB functionality that we need for Wysper
- * @TODO: Should store a map from userid to lastRead message and update when we get a pull
- * so we know how many messages to return
- *
- * @TODO: Need to write a function to return the n most recent messages from the messages table
- *
- * @TODO
  */
 public class DbWrapper
 {
@@ -245,7 +237,6 @@ public class DbWrapper
         return count;
     }
 
-
     /**
      * Initializes the messages table according to our Sprint2/DB Schema document
      *   **Adds a column for username to aid in creating message objects**
@@ -303,7 +294,6 @@ public class DbWrapper
         }
         return ret;
     }
-
 
     /**
      * This function adds a new user to the database
@@ -425,6 +415,7 @@ public class DbWrapper
         updateUsersLastRead(user_name);
 
     }
+
     public void displayAll(){
         ResultSet rs;
         PreparedStatement getmessage;
@@ -505,6 +496,42 @@ public class DbWrapper
         catch (SQLException sqle) {
             printSQLException(sqle);
         }
+        return ret;
+    }
+
+    /**
+     * Get a specific number of recent messages from the database
+     * @param n the number of messages to get
+     * @return ArrayList of message objects
+     */
+    public ArrayList<Message> getMessages(int n) {
+        ArrayList<Message> ret = new ArrayList<>();
+        ResultSet rs;
+        PreparedStatement getmessage;
+        try {
+            getmessage = conn.prepareStatement("SELECT username, mid, text, time  from messages ORDER BY mid DESC");
+            //Storing message in result set
+            rs = getmessage.executeQuery();
+            if (!rs.next()) {
+                return ret;
+            }
+            else{
+                Message msg = new Message(rs.getString(1),rs.getString(3), rs.getTimestamp(4));
+                ret.add(msg);
+                while (rs.next()&& n>1) {
+                    msg = new Message(rs.getString(1), rs.getString(3), rs.getTimestamp(4));
+                    ret.add(msg);
+                    n--;
+                }
+            }
+            if (rs != null) {
+                rs.close();
+            }
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+        Collections.reverse(ret);
         return ret;
     }
 

@@ -7,7 +7,7 @@ import com.sun.net.httpserver.HttpServer;
 public class Server {
 
     private static DbWrapper db;
-    private static boolean dropTables = false;
+    private static boolean dropTables;
 
     /**
      * Initialize HTTP server
@@ -19,6 +19,7 @@ public class Server {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         // initialize connection URLs
         server.createContext("/init", new InitHandler(db));
+        server.createContext("/getn", new NMesgHandler(db));
         server.createContext("/send", new SendHandler(db));
         server.createContext("/poll", new PullHandler(db));
         // creates a default executor
@@ -35,12 +36,7 @@ public class Server {
 
         } while (!(choice.equals("y") || choice.equals("n") || choice.equals("")));
 
-        if (choice.equals("n") || choice.equals("")) {
-            dropTables = false;
-        }
-        else {
-            dropTables = true;
-        }
+        dropTables = (choice.equals("n") || choice.equals(""));
     }
 
     public static void main(String[] args) throws Exception {

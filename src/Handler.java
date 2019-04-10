@@ -95,34 +95,13 @@ abstract class Handler implements HttpHandler {
         JSONParser parser = new JSONParser();
         return (JSONObject) parser.parse(jsonMsg);
     }
-}
-
-/**
- * InitHandler handles the first request for messages when a user
- * logs in.
- */
-class InitHandler extends Handler {
-
-    private int mostRecentMessages = 50;
-
-    InitHandler(DbWrapper db) {
-        super(db);
-    }
 
     /**
-     * Get a constant number of most recent messages from the database
-     *
-     * @param req - JSON String containing user account information
-     * @return - JSON array containing a number of most recent messages
-     * @throws ParseException - if JSON request is malformed
+     * Convert an array of Messages into a marshaled JSON string
+     * @param newMessages Messages to marshal
+     * @return JSON object holding marshaled message data
      */
-    protected String accessDB(String req) throws ParseException {
-
-        // insert username into database
-        database.insertUser(req);
-        // get message history
-        ArrayList<Message> newMessages = database.getHistory(req);
-
+    JSONObject marshalMessages(ArrayList<Message> newMessages) {
         // convert ArrayList to JSONArray
         JSONArray newMsgJson = new JSONArray();
         for(Message msg : newMessages) {
@@ -132,8 +111,56 @@ class InitHandler extends Handler {
         JSONObject response = new JSONObject();
         response.put("messages", newMsgJson);
 
-       // send JSON array to client
-        return response.toString();
+        // send JSON array to client
+        return response;
+    }
+}
+
+/**
+ * InitHandler handles the first request for messages when a user
+ * logs in.
+ */
+class InitHandler extends Handler {
+
+    // get this many messages on the first connection
+    int recentMessages = 69;
+    InitHandler(DbWrapper db) {
+        super(db);
+    }
+
+    /**
+     * Get a constant number of most recent messages from the database
+     * @param req - JSON String containing user account information
+     * @return - JSON array containing a number of most recent messages
+     */
+    protected String accessDB(String req) {
+        // insert username into database
+        database.insertUser(req);
+        // get constant number of recent messages
+        ArrayList<Message> newMessages = database.getMessages(recentMessages);
+        // send these messages in JSON String form to the client
+        return marshalMessages(newMessages).toString();
+    }
+}
+
+class NMesgHandler extends Handler {
+
+    NMesgHandler(DbWrapper db) {
+        super(db);
+    }
+
+    /**
+     * Get a constant number of most recent messages from the database
+     * @param req - JSON String containing user account information
+     * @return - JSON array containing a number of most recent messages
+     */
+    protected String accessDB(String req) {
+        // parse client's request
+        int numMessages = Integer.getInteger(req);
+        // get that many messages
+        ArrayList<Message> newMessages = database.getMessages(numMessages);
+        // send these messages in JSON String form to the client
+        return marshalMessages(newMessages).toString();
     }
 }
 
@@ -155,16 +182,14 @@ class SendHandler extends Handler {
      * @throws ParseException - if JSON request is malformed
      */
     protected String accessDB(String req) throws ParseException {
-
         // parse JSON request
         JSONObject json = parse(req);
         // convert JSON into Message object
         Message msg = new Message(json);
-        // insert user, just as a safeguard
+        // insert user if they weren't already there
         database.insertUser(msg.getUsername());
         // add message to database
         database.insertMessage(msg);
-
         // empty string means success
         return "";
     }
@@ -182,26 +207,14 @@ class PullHandler extends Handler {
     /**
      * Get all the messages in the database that were sent since the
      * last time this user requested new messages
-     *
      * @param req - JSON String containing user account information
      * @return - JSON array containing a number of most recent messages
      * @throws ParseException - if JSON request is malformed
      */
     protected String accessDB(String req) throws ParseException {
-
         // get an ArrayList of new messages this user has not seen
         ArrayList<Message> newMessages = database.getMessages(req);
-
-        // convert ArrayList to JSONArray
-        JSONArray newMsgJson = new JSONArray();
-        for(Message msg : newMessages) {
-            newMsgJson.add(msg.toJSON());
-        }
-        // add JSONArray to a JSONObject
-        JSONObject response = new JSONObject();
-        response.put("messages", newMsgJson);
-
-        // send JSON array to client
-        return response.toString();
+        // send these messages in JSON String form to the client
+        return marshalMessages(newMessages).toString();
     }
 }
