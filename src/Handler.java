@@ -123,8 +123,7 @@ abstract class Handler implements HttpHandler {
 class InitHandler extends Handler {
 
     // get this many messages on the first connection
-    int recentMessages = 10;
-
+    int recentMessages = 69;
     InitHandler(DbWrapper db) {
         super(db);
     }
