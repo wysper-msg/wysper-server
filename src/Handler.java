@@ -1,5 +1,6 @@
 package src;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -95,34 +96,13 @@ abstract class Handler implements HttpHandler {
         JSONParser parser = new JSONParser();
         return (JSONObject) parser.parse(jsonMsg);
     }
-}
-
-/**
- * InitHandler handles the first request for messages when a user
- * logs in.
- */
-class InitHandler extends Handler {
-
-    private int mostRecentMessages = 50;
-
-    InitHandler(DbWrapper db) {
-        super(db);
-    }
 
     /**
-     * Get a constant number of most recent messages from the database
-     *
-     * @param req - JSON String containing user account information
-     * @return - JSON array containing a number of most recent messages
-     * @throws ParseException - if JSON request is malformed
+     * Convert an array of Messages into a marshaled JSON string
+     * @param newMessages Messages to marshal
+     * @return JSON object holding marshaled message data
      */
-    protected String accessDB(String req) throws ParseException {
-
-        // insert username into database
-        database.insertUser(req);
-        // get message history
-        ArrayList<Message> newMessages = database.getHistory(req);
-
+    JSONObject marshalMessages(ArrayList<Message> newMessages) {
         // convert ArrayList to JSONArray
         JSONArray newMsgJson = new JSONArray();
         for(Message msg : newMessages) {
@@ -132,7 +112,53 @@ class InitHandler extends Handler {
         JSONObject response = new JSONObject();
         response.put("messages", newMsgJson);
 
-       // send JSON array to client
+        // send JSON array to client
+        return response;
+    }
+}
+
+/**
+ * InitHandler handles the first request for messages when a user
+ * logs in.
+ */
+class InitHandler extends Handler {
+
+    InitHandler(DbWrapper db) {
+        super(db);
+    }
+
+    /**
+     * Get a constant number of most recent messages from the database
+     * @param req - JSON String containing user account information
+     * @return - JSON array containing a number of most recent messages
+     */
+    protected String accessDB(String req) {
+        // insert username into database
+        database.insertUser(req);
+       // empty string is a success
+        return "";
+    }
+}
+
+class NMesgHandler extends Handler {
+
+    NMesgHandler(DbWrapper db) {
+        super(db);
+    }
+
+    /**
+     * Get a constant number of most recent messages from the database
+     * @param req - JSON String containing user account information
+     * @return - JSON array containing a number of most recent messages
+     */
+    protected String accessDB(String req) {
+        // parse client's request
+        int numMessages = Integer.getInteger(req);
+        // get that many messages
+        ArrayList<Message> newMessages = database.getNMessages(numMessages);
+        // convert ArrayList to JSONArray
+        JSONObject response = marshalMessages(newMessages);
+        // send JSON array to client
         return response.toString();
     }
 }
@@ -155,16 +181,14 @@ class SendHandler extends Handler {
      * @throws ParseException - if JSON request is malformed
      */
     protected String accessDB(String req) throws ParseException {
-
         // parse JSON request
         JSONObject json = parse(req);
         // convert JSON into Message object
         Message msg = new Message(json);
-        // insert user, just as a safeguard
+        // insert user if they weren't already there
         database.insertUser(msg.getUsername());
         // add message to database
         database.insertMessage(msg);
-
         // empty string means success
         return "";
     }
@@ -182,25 +206,15 @@ class PullHandler extends Handler {
     /**
      * Get all the messages in the database that were sent since the
      * last time this user requested new messages
-     *
      * @param req - JSON String containing user account information
      * @return - JSON array containing a number of most recent messages
      * @throws ParseException - if JSON request is malformed
      */
     protected String accessDB(String req) throws ParseException {
-
         // get an ArrayList of new messages this user has not seen
         ArrayList<Message> newMessages = database.getMessages(req);
-
         // convert ArrayList to JSONArray
-        JSONArray newMsgJson = new JSONArray();
-        for(Message msg : newMessages) {
-            newMsgJson.add(msg.toJSON());
-        }
-        // add JSONArray to a JSONObject
-        JSONObject response = new JSONObject();
-        response.put("messages", newMsgJson);
-
+        JSONObject response = marshalMessages(newMessages);
         // send JSON array to client
         return response.toString();
     }
