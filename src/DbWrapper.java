@@ -5,173 +5,40 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 /**
- * DbWrapper abstracts all necessary DB functionality that we need for Wysper
+ * DbWrapper abstracts all necessary database functionality that we need for Wysper
  */
-public class DbWrapper
+class DbWrapper
 {
-    /* the default framework is embedded */
-    private String framework = "embedded";
     private String protocol = "jdbc:derby:";
+    private String dbname = "wysperdb";
 
     private ArrayList<Statement> statements;
-    public Connection conn;
+    private Connection conn;
 
     /**
-     * The main function demonstrates some basic functionality of our dbwrapper class
-     * You should call the constructor in the client function to connect to the
-     * embedded database.
-     * @param args
+     * Creates a connection to a database
+     * @param createTables specifies whether or not we should create new tables for users and messages
      */
-    public static void main(String[] args) {
-
-        DbWrapper db = new DbWrapper(true);
-
-        // Insert sample users
-        db.insertUser("Corey");
-        db.insertUser("Alex");
-
-        // Create sample message objects
-        Message msg = new Message("Corey", "Hello");
-        Message msg2 = new Message("Alex", "Hello");
-        Message msg3 = new Message("Corey", "SDD is fun!");
-        Message msg4 = new Message("Corey", "Nvm derby sucks");
-        Message msg5 = new Message("Alex", "I <3 derby!");
-
-        // Store our message objects in the database
-        db.insertMessage(msg);
-        db.insertMessage(msg2);
-        db.insertMessage(msg3);
-        db.insertMessage(msg4);
-        db.insertMessage(msg5);
-
-        System.out.println("\nWe have: " + db.countMessages() + " messages in the db!");
-
-        /*
-        *  We will call getMessages twice
-        *  On the first call, we want to return all messages since Corey's
-        *  last_read should be 0 at this point
-        */
-        System.out.println("\nOn first call: ");
-        ArrayList<Message> ret = db.getMessages("Corey");
-        if (ret == null) {
-            System.out.println("No messages found");
-        }
-        else {
-            for (Message tmp : ret) {
-                System.out.println(tmp);
-            }
-        }
-
-        /*
-         * On second call, we don't want to return any messages since
-         * at this point, Corey's last read should be the most recent
-         * message
-         */
-        System.out.println("\nOn second call: ");
-        ArrayList<Message> ret2 = db.getMessages("Corey");
-        if (ret2 == null) {
-            System.out.println("No messages found\n");
-        }
-        else {
-            for (Message tmp : ret2) {
-                System.out.println(tmp);
-            }
-        }
-        db.displayAll();
-
-        // Finally cleanup the database
-        db.cleanup(true);
-
-        System.out.println("Sample app finished!");
-
-    }
-
-    /**
-     * Removes all data associated with the db and shuts down the
-     * derby driver
-     * @param dropTables specifies whether or not we should remove the
-     *                   tables
-     */
-    public void cleanup(boolean dropTables) {
-        try {
-            if (dropTables) {
-                this.dropUsersTable();
-                this.dropMessagesTable();
-            }
-
-            DriverManager.getConnection("jdbc:derby:;shutdown=true");
-
-        }
-        catch (SQLException se)
-        {
-            if (( (se.getErrorCode() == 50000)
-                    && ("XJ015".equals(se.getSQLState()) ))) {
-                // we got the expected exception
-                System.out.println("Derby shut down normally");
-                // Note that for single database shutdown, the expected
-                // SQL state is "08006", and the error code is 45000.
-            } else {
-                // if the error code or SQLState is different, we have
-                // an unexpected exception (shutdown failed)
-                System.err.println("Derby did not shut down normally");
-                printSQLException(se);
-            }
-        }
-
-        //Connection
-        try {
-            if (this.conn != null) {
-                this.conn.close();
-                this.conn = null;
-            }
-        } catch (SQLException sqle) {
-            printSQLException(sqle);
-        }
-
-        //Statements
-        // Statements and PreparedStatements
-        int i = 0;
-        while (!this.statements.isEmpty()) {
-            // PreparedStatement extend Statement
-            Statement st = (Statement) this.statements.remove(i);
-            try {
-                if (st != null) {
-                    st.close();
-                    st = null;
-                }
-            } catch (SQLException sqle) {
-                printSQLException(sqle);
-            }
-        }
-    }
-
-    /**
-     *  Creates a connection object
-     * @param createTables specifies whether or not we should create new
-     *                     tables for users and messages
-     *
-     */
-    public DbWrapper(boolean createTables) {
-        String dbname = "wysperdb";
+    DbWrapper(boolean createTables) {
+        // try to instantiate database
         try {
             String driver = "org.apache.derby.jdbc.EmbeddedDriver";
             Class.forName(driver).newInstance();
         }
         catch (Exception e) {
-            System.out.println(e);
+            System.out.println(e.toString());
         }
+        // try to connect to this database
         try {
-            this.conn = DriverManager.getConnection(protocol + dbname
-                    + ";create=True");
+            this.conn = DriverManager.getConnection(protocol + dbname + ";create=True");
 
             System.out.println("Created database " + dbname + " and connected");
 
-            // We want to control transactions manually. Autocommit is on by
-            // default in JDBC.
+            // We want to control transactions manually. Autocommit is on by default in JDBC.
             conn.setAutoCommit(false);
+            this.statements = new ArrayList<>();
 
-            this.statements = new ArrayList<Statement>();
-
+            // create user and message tables
             if (createTables) {
                 this.createUsersTable();
                 this.createMessagesTable();
@@ -184,7 +51,7 @@ public class DbWrapper
     }
 
     /**
-     * Initializes the users table according to our Sprint2/DB Schema doc
+     * Initializes the users table
      */
     private void createUsersTable() {
         try {
@@ -212,34 +79,7 @@ public class DbWrapper
     }
 
     /**
-     * Counts the number of message objects in the database
-     * primarily used for debugging purposes
-     * @return the number of messages in the messages table
-     */
-    public int countMessages() {
-        PreparedStatement countMsgs;
-        ResultSet rs;
-        int count = 0;
-        try {
-            countMsgs = this.conn.prepareStatement("Select count(*) from messages");
-            statements.add(countMsgs);
-
-            rs = countMsgs.executeQuery();
-            rs.next();
-            count = rs.getInt(1);
-
-            rs.close();
-            rs = null;
-        }
-        catch (SQLException sqle){
-            printSQLException(sqle);
-        }
-        return count;
-    }
-
-    /**
-     * Initializes the messages table according to our Sprint2/DB Schema document
-     *   **Adds a column for username to aid in creating message objects**
+     * Initializes the messages table
      */
     private void createMessagesTable() {
         try {
@@ -247,7 +87,6 @@ public class DbWrapper
             s = this.conn.createStatement();
             statements.add(s);
 
-            // TODO: how big should message body be?
             s.execute("create table messages(" +
                     "mid int NOT NULL GENERATED ALWAYS AS IDENTITY, " +
                     "userid int, " +
@@ -269,11 +108,11 @@ public class DbWrapper
     }
 
     /**
-     * Returns the last_read attribute of a given user in our db
-     * @param username the user to check
-     * @return the highest messageid that this user has "read"
+     * Finds the message ID of the most recent message a user has seen
+     * @param username the user to search for
+     * @return the most recent messageid that this user has seen
      */
-    public int getLastRead(String username) {
+    private int getLastRead(String username) {
         PreparedStatement checkUser;
         ResultSet rs;
         int ret = 0;
@@ -296,10 +135,30 @@ public class DbWrapper
     }
 
     /**
-     * This function adds a new user to the database
-     * @param username the user to add to the db
+     * Updates the last read for the user to the latest message in the messages table
+     * @param username, the user to update
      */
-    public void insertUser(String username) {
+    private void updateUsersLastRead(String username) {
+        PreparedStatement updateusers;
+        try {
+            updateusers = conn.prepareStatement(
+                    "UPDATE users SET last_read = (SELECT max(mid) FROM messages) WHERE username = ?");
+
+            statements.add(updateusers);
+            updateusers.setString(1, username);    // Set username
+            updateusers.executeUpdate();
+            this.conn.commit();
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+    }
+
+    /**
+     * This function adds a new user to the database
+     * @param username the user to add to the database
+     */
+    void insertUser(String username) {
         PreparedStatement psInsert;
 
         try {
@@ -322,18 +181,16 @@ public class DbWrapper
     }
 
     /**
-     * This function adds a message to our database
-     * TODO: Add message to parameters and extract necessary info
-     * In wysper-server, we have a Message object that helps pass messages around,
-     * but I'm not sure how you want to implement that Trevor so I'll leave it like this
+     * This function adds a new message to the database
+     * @param msg the message to add to the database
      */
-    public void insertMessage(Message msg) {
+    void insertMessage(Message msg) {
+        // get message components
         String username = msg.getUsername();
-
         Timestamp time = msg.getTimestamp();
         String text = msg.getBody();
 
-        PreparedStatement psInsert, countMessages;
+        PreparedStatement psInsert;
         try {
             psInsert = conn.prepareStatement(
                     "insert into messages (username, time, text) values (?, ?, ?)");
@@ -352,119 +209,21 @@ public class DbWrapper
     }
 
     /**
-     * Saves messages to the database using the insertMessage function
-     * @param msgs a list of messages to save
-     */
-    public void insertMessages(ArrayList<Message> msgs) {
-        for (Message msg : msgs) {
-            insertMessage(msg);
-        }
-    }
-
-    /**
-     * Updates the last read for the user to the latest message in the messages table
-     * @param user_name, the user to update
-     */
-    public void updateUsersLastRead(String user_name) {
-        PreparedStatement updateusers, checkUser;
-        ResultSet rs;
-        try {
-            updateusers = conn.prepareStatement(
-                    "UPDATE users SET last_read = (SELECT max(mid) FROM messages) WHERE username = ?");
-
-            statements.add(updateusers);
-            updateusers.setString(1, user_name);    // Set username
-            int updated = updateusers.executeUpdate();
-            // System.out.printf("Updating last_read for (%d) user(s) %s\n",updated, user_name);
-            this.conn.commit();
-        }
-        catch (SQLException sqle) {
-            printSQLException(sqle);
-        }
-    }
-
-    public void displayMesssage(String user_name){
-        Message msg;
-        ResultSet rs;
-        PreparedStatement getmessage;
-
-        try {
-            getmessage = conn.prepareStatement("SELECT userid, text, time  from messages WHERE mid >=(SELECT last_read from users WHERE username = ?) AS lastread");
-            //Storing message in result set
-            getmessage.setString(1,user_name);
-            rs = getmessage.executeQuery();
-            if (!rs.next()) {
-                reportFailure("No rows in ResultSet");
-            }
-            else{
-                while(rs.next()){
-                    //fetching messages(Add code here to enter values to message class object)
-                    System.out.println(rs.getInt(1) +" "+rs.getString(2)+" "+ rs.getString(3) );
-                }
-            }
-            System.out.println("Sending messages to server");
-            if (rs != null) {
-                rs.close();
-                rs = null;
-            }
-        }
-        catch (SQLException sqle) {
-            printSQLException(sqle);
-        }
-
-        updateUsersLastRead(user_name);
-
-    }
-
-    public void displayAll(){
-        ResultSet rs;
-        PreparedStatement getmessage;
-        System.out.println(String.format("%10s %10s %25s %25s", "userid", "messageid", "text", "time"));
-        try {
-            getmessage = conn.prepareStatement("SELECT username, mid, text, time  from messages");
-            //Storing message in result set
-            rs = getmessage.executeQuery();
-            if (!rs.next()) {
-                reportFailure("No rows in ResultSet");
-            }
-            else{
-                do {
-                    //fetching messages(Add code here to enter values to message class object)
-                    System.out.println(String.format("%10s %10s %25s %25s",
-                            rs.getString(1), rs.getInt(2), rs.getString(3), rs.getString(4)));
-                } while(rs.next());
-            }
-            //System.out.println("Sending messages to server");
-            if (rs != null) {
-                rs.close();
-                rs = null;
-            }
-        }
-        catch (SQLException sqle) {
-            printSQLException(sqle);
-        }
-    }
-
-    private void updateMessagesRow() {
-
-    }
-
-    /**
-     * Returns a list of message objects that are unread by username
+     * Get all messages that are unread by the specified user
      * @param username the user to get messages for
+     * @return array of messages this user has not seen
      */
-    public ArrayList<Message> getMessages(String username) {
+    ArrayList<Message> getMessages(String username) {
 
         ArrayList<Message> ret = new ArrayList<>();
         ResultSet rs;
         PreparedStatement getMessage;
-        int last_read = 0;
+        int last_read;
 
         try {
             // First this function needs to query the users database and get
             // the last_read messageid of the given user
-            last_read =  this.getLastRead(username);
-            // System.out.println("Last read for " + username + " is " + last_read);
+            last_read = this.getLastRead(username);
 
             // Next we query the messages table and get the unread messages for this user
             getMessage = conn.prepareStatement("SELECT username, text, time, mid  from messages WHERE mid > ?");
@@ -477,7 +236,6 @@ public class DbWrapper
             }
             else {
                 // As we receive a message, we put it in a new message object and add it to the ret array
-                int i = 0;
                 Message msg = new Message(rs.getString(1), rs.getString(2), rs.getTimestamp(3));
                 ret.add(msg);
                 while (rs.next()) {
@@ -488,7 +246,6 @@ public class DbWrapper
 
             if (rs.next())
                 rs.close();
-                rs = null;
 
             // Finally we should update the user to reflect that they have read up to the most recent message
             updateUsersLastRead(username);
@@ -500,33 +257,28 @@ public class DbWrapper
     }
 
     /**
-     * Get a specific number of recent messages from the database
+     * Get a specific number of recent messages
      * @param n the number of messages to get
-     * @return ArrayList of message objects
+     * @return array of messages of size n
      */
-    public ArrayList<Message> getMessages(int n) {
+    ArrayList<Message> getMessages(int n) {
         ArrayList<Message> ret = new ArrayList<>();
         ResultSet rs;
         PreparedStatement getmessage;
         try {
             getmessage = conn.prepareStatement("SELECT username, mid, text, time  from messages ORDER BY mid DESC");
-            //Storing message in result set
             rs = getmessage.executeQuery();
             if (!rs.next()) {
                 return ret;
             }
             else{
-                Message msg = new Message(rs.getString(1),rs.getString(3), rs.getTimestamp(4));
-                ret.add(msg);
-                while (rs.next()&& n>1) {
-                    msg = new Message(rs.getString(1), rs.getString(3), rs.getTimestamp(4));
+                do {
+                    Message msg = new Message(rs.getString(1), rs.getString(3), rs.getTimestamp(4));
                     ret.add(msg);
                     n--;
-                }
+                } while (rs.next() && n>1);
             }
-            if (rs != null) {
-                rs.close();
-            }
+            rs.close();
         }
         catch (SQLException sqle) {
             printSQLException(sqle);
@@ -536,53 +288,59 @@ public class DbWrapper
     }
 
     /**
-     * Returns a list of message objects that are unread by username
-     * @param username the user to get messages for
+     * Removes all data associated with the db and shuts down the derby driver
+     * @param dropTables specifies whether or not we should remove the tables
      */
-    public ArrayList<Message> getHistory(String username) {
+    void cleanup(boolean dropTables) {
 
-        ArrayList<Message> ret = new ArrayList<>();
-        ResultSet rs;
-        PreparedStatement getMessage;
-        int last_read = 0;
-
+        // shut down database
         try {
-            // First this function needs to query the users database and get
-            // the last_read messageid of the given user
-            last_read =  this.getLastRead(username);
-            // System.out.println("Last read for " + username + " is " + last_read);
-
-            // Next we query the messages table and get the unread messages for this user
-            getMessage = conn.prepareStatement("SELECT username, text, time, mid  from messages");
-   //         getMessage.setInt(1,last_read);
-
-            rs = getMessage.executeQuery();
-
-            if (!rs.next()) {
-                return ret;
-            }
-            else {
-                // As we receive a message, we put it in a new message object and add it to the ret array
-                int i = 0;
-                Message msg = new Message(rs.getString(1), rs.getString(2), rs.getTimestamp(3));
-                ret.add(msg);
-                while (rs.next()) {
-                    msg = new Message(rs.getString(1), rs.getString(2), rs.getTimestamp(3));
-                    ret.add(msg);
-                }
+            // delete the database if user specified
+            if (dropTables) {
+                this.dropUsersTable();
+                this.dropMessagesTable();
             }
 
-            if (rs.next())
-                rs.close();
-            rs = null;
-
-            // Finally we should update the user to reflect that they have read up to the most recent message
-            updateUsersLastRead(username);
+            DriverManager.getConnection("jdbc:derby:;shutdown=true");
         }
-        catch (SQLException sqle) {
+        catch (SQLException se)
+        {
+            if (( (se.getErrorCode() == 50000)
+                    && ("XJ015".equals(se.getSQLState()) ))) {
+                // we got the expected exception
+                System.out.println("Derby shut down normally");
+                // Note that for single database shutdown, the expected
+                // SQL state is "08006", and the error code is 45000.
+            } else {
+                // if the error code or SQLState is different, we have
+                // an unexpected exception (shutdown failed)
+                System.err.println("Derby did not shut down normally");
+                printSQLException(se);
+            }
+        }
+
+        // remove connection to database
+        try {
+            if (this.conn != null) {
+                this.conn.close();
+                this.conn = null;
+            }
+        } catch (SQLException sqle) {
             printSQLException(sqle);
         }
-        return ret;
+
+        // clear outstanding statements
+        int i = 0;
+        while (!this.statements.isEmpty()) {
+            Statement st = this.statements.remove(i);
+            try {
+                if (st != null) {
+                    st.close();
+                }
+            } catch (SQLException sqle) {
+                printSQLException(sqle);
+            }
+        }
     }
 
     /**
@@ -620,23 +378,38 @@ public class DbWrapper
     }
 
     /**
-     * Reports a data verification failure to System.err with the given message.
-     *
-     * @param message A message describing what failed.
+     * Print all messages in the database to the server console
      */
-    private void reportFailure(String message) {
-        System.err.println("\nData verification failed:");
-        System.err.println('\t' + message);
+    void displayAllMessages() {
+        ResultSet rs;
+        PreparedStatement getmessage;
+        System.out.println(String.format("%10s %10s %25s %25s", "userid", "messageid", "text", "time"));
+        try {
+            getmessage = conn.prepareStatement("SELECT username, mid, text, time  from messages");
+            //Storing message in result set
+            rs = getmessage.executeQuery();
+            if (!rs.next()) {
+                System.err.println("No rows in ResultSet");
+            }
+            else {
+                do {
+                    //fetching messages(Add code here to enter values to message class object)
+                    System.out.println(String.format("%10s %10s %25s %25s",
+                            rs.getString(1), rs.getInt(2), rs.getString(3), rs.getString(4)));
+                } while(rs.next());
+            }
+            rs.close();
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
     }
 
     /**
-     * Prints details of an SQLException chain to <code>System.err</code>.
-     * Details included are SQL State, Error code, Exception message.
-     *
+     * Prints details of an SQLException chain
      * @param e the SQLException from which to print details.
      */
-    public static void printSQLException(SQLException e)
-    {
+    private static void printSQLException(SQLException e) {
         // Unwraps the entire exception chain to unveil the real cause of the
         // Exception.
         while (e != null)

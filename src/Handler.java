@@ -29,7 +29,7 @@ abstract class Handler implements HttpHandler {
 
     /**
      * Handle requests from clients and access the database
-     * @param t - HTTP exchange object, provided by the server when a client accesses a URL
+     * @param t HTTP exchange object, provided by the server when a client accesses a URL
      */
     @Override
     public void handle(HttpExchange t) {
@@ -66,7 +66,7 @@ abstract class Handler implements HttpHandler {
 
     /**
      * Respond to the client with an error code
-     * @param t - HttpExchange that experienced the error
+     * @param t HttpExchange that experienced the error
      */
     private void sendError(HttpExchange t) {
         try {
@@ -79,16 +79,16 @@ abstract class Handler implements HttpHandler {
 
     /**
      * Access the database. Extended by child classes.
-     * @param req - JSON String representing the data sent or requested by the client
-     * @return - String response message for client
-     * @throws ParseException - if JSON parse fails
+     * @param req JSON String representing the data sent or requested by the client
+     * @return String response message for client
+     * @throws ParseException if JSON parse fails
      */
     abstract protected String accessDB(String req) throws ParseException;
 
     /**
      * parse a JSON message
-     * @param jsonMsg - JSON string representing data sent by client
-     * @return - JSONObject containing data parsed from string
+     * @param jsonMsg JSON string representing data sent by client
+     * @return JSONObject containing data parsed from string
      * @throws ParseException - if JSON parse fails
      */
     JSONObject parse(String jsonMsg) throws ParseException {
@@ -117,21 +117,21 @@ abstract class Handler implements HttpHandler {
 }
 
 /**
- * InitHandler handles the first request for messages when a user
- * logs in.
+ * InitHandler handles the first request for messages when a user logs in.
  */
 class InitHandler extends Handler {
 
     // get this many messages on the first connection
     int recentMessages = 69;
+
     InitHandler(DbWrapper db) {
         super(db);
     }
 
     /**
-     * Get a constant number of most recent messages from the database
-     * @param req - JSON String containing user account information
-     * @return - JSON array containing a number of most recent messages
+     * Add the user and get a constant number of most recent messages
+     * @param req the user's username
+     * @return JSON array containing a number of most recent messages
      */
     protected String accessDB(String req) {
         // insert username into database
@@ -143,6 +143,9 @@ class InitHandler extends Handler {
     }
 }
 
+/**
+ * NMesgHandler handles user requesting an arbitrary number of messages
+ */
 class NMesgHandler extends Handler {
 
     NMesgHandler(DbWrapper db) {
@@ -151,8 +154,8 @@ class NMesgHandler extends Handler {
 
     /**
      * Get a constant number of most recent messages from the database
-     * @param req - JSON String containing user account information
-     * @return - JSON array containing a number of most recent messages
+     * @param req the number of messages to get
+     * @return JSON array containing req number of most recent messages
      */
     protected String accessDB(String req) {
         // parse client's request
@@ -165,8 +168,7 @@ class NMesgHandler extends Handler {
 }
 
 /**
- * SendHandler handles new messages being sent to the server, storing
- * them in the message database.
+ * SendHandler handles new messages being sent to the server, storing them in the message database.
  */
 class SendHandler extends Handler {
 
@@ -176,10 +178,9 @@ class SendHandler extends Handler {
 
     /**
      * Put a new message in the database
-     *
-     * @param req - JSON String containing user's message
-     * @return - Empty response string to signal a success
-     * @throws ParseException - if JSON request is malformed
+     * @param req JSON String containing user's message
+     * @return Empty response string to signal a success
+     * @throws ParseException if JSON request is malformed
      */
     protected String accessDB(String req) throws ParseException {
         // parse JSON request
@@ -195,8 +196,7 @@ class SendHandler extends Handler {
     }
 }
 /**
- * PullHandler handles clients asking for all new messages since the last
- * time they checked
+ * PullHandler handles clients asking for all new messages since the last time they checked
  */
 class PullHandler extends Handler {
 
@@ -205,13 +205,11 @@ class PullHandler extends Handler {
     }
 
     /**
-     * Get all the messages in the database that were sent since the
-     * last time this user requested new messages
-     * @param req - JSON String containing user account information
-     * @return - JSON array containing a number of most recent messages
-     * @throws ParseException - if JSON request is malformed
+     * Get all the messages in the database that were sent since the last time this user requested new messages
+     * @param req the user's username
+     * @return JSON String containing a number of most recent messages
      */
-    protected String accessDB(String req) throws ParseException {
+    protected String accessDB(String req) {
         // get an ArrayList of new messages this user has not seen
         ArrayList<Message> newMessages = database.getMessages(req);
         // send these messages in JSON String form to the client

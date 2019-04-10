@@ -1,13 +1,15 @@
-package src; // Server for the Wysper messaging service
+package src;
 
 import java.util.Scanner;
 import java.net.InetSocketAddress;
 import com.sun.net.httpserver.HttpServer;
 
+/**
+ * The server for the Wysper messaging server
+ */
 public class Server {
 
     private static DbWrapper db;
-    private static boolean dropTables;
 
     /**
      * Initialize HTTP server
@@ -27,40 +29,33 @@ public class Server {
         return server;
     }
 
-    private static void saveSessionChoice(Scanner scanner) {
-
-        String choice = scanner.nextLine();
-        do {
-            System.out.print("Permanently delete data on shutdown? (y/n) (default n): ");
-            choice = scanner.nextLine();
-
-        } while (!(choice.equals("y") || choice.equals("n") || choice.equals("")));
-
-        dropTables = (choice.equals("n") || choice.equals(""));
-    }
-
     public static void main(String[] args) throws Exception {
 
-        Scanner scanner = new Scanner(System.in);
+        // check command-line args
+        if(args.length != 2) {
+            System.err.println("ERROR: Invalid command line arguments");
+            System.err.println("Usage: java -jar wysper-server.jar <port> [\"no-save\"]");
+            return;
+        }
 
         // get port
-        System.out.print("Enter server port: ");
-        int port = scanner.nextInt();
-
+        int port = Integer.valueOf(args[0]);
+        // get database save choice
+        boolean dropTables = args[1].equals("no-save");
 
         // start server
-        saveSessionChoice(scanner);
         db = new DbWrapper(true);
         HttpServer s = initServer(port);
         s.start();
-        System.out.println("Starting server. Type \'Exit\' to quit.");
+        System.out.println(String.format("Started server on port %d. Type \'Exit\' to quit.", port));
 
         // wait for termination command
+        Scanner scanner = new Scanner(System.in);
         String command = null;
         while (command == null || !command.equals("Exit")) {
             command = scanner.nextLine();
             if (command.equals("ShowMessages")) {
-                db.displayAll();
+                db.displayAllMessages();
            }
         }
 
