@@ -1,6 +1,5 @@
 package src;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -123,6 +122,9 @@ abstract class Handler implements HttpHandler {
  */
 class InitHandler extends Handler {
 
+    // get this many messages on the first connection
+    int recentMessages = 69;
+
     InitHandler(DbWrapper db) {
         super(db);
     }
@@ -135,8 +137,10 @@ class InitHandler extends Handler {
     protected String accessDB(String req) {
         // insert username into database
         database.insertUser(req);
-       // empty string is a success
-        return "";
+        // get constant number of recent messages
+        ArrayList<Message> newMessages = database.getNMessages(recentMessages);
+        // send these messages in JSON String form to the client
+        return marshalMessages(newMessages).toString();
     }
 }
 
@@ -156,10 +160,8 @@ class NMesgHandler extends Handler {
         int numMessages = Integer.getInteger(req);
         // get that many messages
         ArrayList<Message> newMessages = database.getNMessages(numMessages);
-        // convert ArrayList to JSONArray
-        JSONObject response = marshalMessages(newMessages);
-        // send JSON array to client
-        return response.toString();
+        // send these messages in JSON String form to the client
+        return marshalMessages(newMessages).toString();
     }
 }
 
@@ -213,9 +215,7 @@ class PullHandler extends Handler {
     protected String accessDB(String req) throws ParseException {
         // get an ArrayList of new messages this user has not seen
         ArrayList<Message> newMessages = database.getMessages(req);
-        // convert ArrayList to JSONArray
-        JSONObject response = marshalMessages(newMessages);
-        // send JSON array to client
-        return response.toString();
+        // send these messages in JSON String form to the client
+        return marshalMessages(newMessages).toString();
     }
 }

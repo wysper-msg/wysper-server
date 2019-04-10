@@ -1,19 +1,10 @@
 package src;
 
-import java.lang.Class;
 import java.sql.*;
-
 import java.util.ArrayList;
-
 
 /**
  * DbWrapper abstracts all necessary DB functionality that we need for Wysper
- * @TODO: Should store a map from userid to lastRead message and update when we get a pull
- * so we know how many messages to return
- *
- * @TODO: Need to write a function to return the n most recent messages from the messages table
- *
- * @TODO
  */
 public class DbWrapper
 {
