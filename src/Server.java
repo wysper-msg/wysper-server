@@ -7,7 +7,7 @@ import com.sun.net.httpserver.HttpServer;
 public class Server {
 
     private static DbWrapper db;
-    private static boolean dropTables = false;
+    private static boolean dropTables;
 
     /**
      * Initialize HTTP server
@@ -36,12 +36,7 @@ public class Server {
 
         } while (!(choice.equals("y") || choice.equals("n") || choice.equals("")));
 
-        if (choice.equals("n") || choice.equals("")) {
-            dropTables = false;
-        }
-        else {
-            dropTables = true;
-        }
+        dropTables = (choice.equals("n") || choice.equals(""));
     }
 
     public static void main(String[] args) throws Exception {

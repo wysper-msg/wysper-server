@@ -123,7 +123,7 @@ abstract class Handler implements HttpHandler {
 class InitHandler extends Handler {
 
     // get this many messages on the first connection
-    int recentMessages = 69;
+    int recentMessages = 10;
 
     InitHandler(DbWrapper db) {
         super(db);
@@ -138,7 +138,7 @@ class InitHandler extends Handler {
         // insert username into database
         database.insertUser(req);
         // get constant number of recent messages
-        ArrayList<Message> newMessages = database.getNMessages(recentMessages);
+        ArrayList<Message> newMessages = database.getMessages(recentMessages);
         // send these messages in JSON String form to the client
         return marshalMessages(newMessages).toString();
     }
@@ -159,7 +159,7 @@ class NMesgHandler extends Handler {
         // parse client's request
         int numMessages = Integer.getInteger(req);
         // get that many messages
-        ArrayList<Message> newMessages = database.getNMessages(numMessages);
+        ArrayList<Message> newMessages = database.getMessages(numMessages);
         // send these messages in JSON String form to the client
         return marshalMessages(newMessages).toString();
     }

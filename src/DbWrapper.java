@@ -2,6 +2,7 @@ package src;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * DbWrapper abstracts all necessary DB functionality that we need for Wysper
@@ -236,7 +237,6 @@ public class DbWrapper
         return count;
     }
 
-
     /**
      * Initializes the messages table according to our Sprint2/DB Schema document
      *   **Adds a column for username to aid in creating message objects**
@@ -294,7 +294,6 @@ public class DbWrapper
         }
         return ret;
     }
-
 
     /**
      * This function adds a new user to the database
@@ -416,6 +415,7 @@ public class DbWrapper
         updateUsersLastRead(user_name);
 
     }
+
     public void displayAll(){
         ResultSet rs;
         PreparedStatement getmessage;
@@ -504,7 +504,7 @@ public class DbWrapper
      * @param n the number of messages to get
      * @return ArrayList of message objects
      */
-    public ArrayList<Message> getNMessages(int n){
+    public ArrayList<Message> getMessages(int n) {
         ArrayList<Message> ret = new ArrayList<>();
         ResultSet rs;
         PreparedStatement getmessage;
@@ -531,6 +531,7 @@ public class DbWrapper
         catch (SQLException sqle) {
             printSQLException(sqle);
         }
+        Collections.reverse(ret);
         return ret;
     }
 
