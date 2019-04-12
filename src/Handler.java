@@ -138,6 +138,7 @@ class InitHandler extends Handler {
         database.insertUser(req);
         // get constant number of recent messages
         ArrayList<Message> newMessages = database.getMessages(recentMessages);
+        database.updateUsersLastRead(req);
         // send these messages in JSON String form to the client
         return marshalMessages(newMessages).toString();
     }
