@@ -138,7 +138,7 @@ class DbWrapper
      * Updates the last read for the user to the latest message in the messages table
      * @param username, the user to update
      */
-    private void updateUsersLastRead(String username) {
+    void updateUsersLastRead(String username) {
         PreparedStatement updateusers;
         try {
             updateusers = conn.prepareStatement(
