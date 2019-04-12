@@ -276,7 +276,7 @@ class DbWrapper
                     Message msg = new Message(rs.getString(1), rs.getString(3), rs.getTimestamp(4));
                     ret.add(msg);
                     n--;
-                } while (rs.next() && n>1);
+                } while (rs.next() && n > 0);
             }
             rs.close();
         }

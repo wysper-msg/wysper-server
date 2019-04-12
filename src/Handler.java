@@ -160,7 +160,7 @@ class NMesgHandler extends Handler {
      */
     protected String accessDB(String req) {
         // parse client's request
-        int numMessages = Integer.getInteger(req);
+        int numMessages = Integer.parseInt(req);
         // get that many messages
         ArrayList<Message> newMessages = database.getMessages(numMessages);
         // send these messages in JSON String form to the client
