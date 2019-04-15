@@ -1,5 +1,3 @@
-package src;
-
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,7 +8,7 @@ import java.util.Collections;
 class DbWrapper
 {
     private String protocol = "jdbc:derby:";
-    private String dbname = "wysperdb";
+    private String dbname;
 
     private ArrayList<Statement> statements;
     private Connection conn;
@@ -19,7 +17,8 @@ class DbWrapper
      * Creates a connection to a database
      * @param createTables specifies whether or not we should create new tables for users and messages
      */
-    DbWrapper(boolean createTables) {
+    DbWrapper(String name, boolean createTables) {
+        dbname = name;
         // try to instantiate database
         try {
             String driver = "org.apache.derby.jdbc.EmbeddedDriver";
@@ -112,7 +111,7 @@ class DbWrapper
      * @param username the user to search for
      * @return the most recent messageid that this user has seen
      */
-    private int getLastRead(String username) {
+    int getLastRead(String username) {
         PreparedStatement checkUser;
         ResultSet rs;
         int ret = 0;
@@ -396,6 +395,31 @@ class DbWrapper
                     //fetching messages(Add code here to enter values to message class object)
                     System.out.println(String.format("%10s %10s %25s %25s",
                             rs.getString(1), rs.getInt(2), rs.getString(3), rs.getString(4)));
+                } while(rs.next());
+            }
+            rs.close();
+        }
+        catch (SQLException sqle) {
+            printSQLException(sqle);
+        }
+    }
+
+    void displayAllUsers() {
+        ResultSet rs;
+        PreparedStatement getuser;
+        System.out.println(String.format("%10s %10s", "userid", "last read"));
+        try {
+            getuser = conn.prepareStatement("SELECT username, last_read  from users");
+            //Storing message in result set
+            rs = getuser.executeQuery();
+            if (!rs.next()) {
+                System.err.println("No rows in ResultSet");
+            }
+            else {
+                do {
+                    //fetching messages(Add code here to enter values to message class object)
+                    System.out.println(String.format("%10s %10s",
+                            rs.getString(1), rs.getInt(2)));
                 } while(rs.next());
             }
             rs.close();
