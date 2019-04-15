@@ -2,7 +2,6 @@ import org.json.simple.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.sql.Time;
 import java.sql.Timestamp;
 
 import static org.junit.Assert.*;

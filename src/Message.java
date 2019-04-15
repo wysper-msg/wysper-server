@@ -6,20 +6,20 @@ import java.util.Date;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/** Message data that needs to be seen on the screen
+/**
+ * Message datatype for representing messages that users have sent to the server
  */
 public class Message{
-    String username;                // Username of the sender
-    String body;             // Message body
-    Timestamp timestamp;    // Time the message was sent
+    private String username;                // Username of the sender
+    private String body;             // Message body
+    private Timestamp timestamp;    // Time the message was sent
 
     /**
-     * Standard message constructor
-     * Adds timestamp on creation
+     * Standard message constructor. Adds timestamp on creation
      * @param username username of sender
      * @param text message body
      */
-    public Message(String username, String text) {
+    Message(String username, String text) {
         this.username = username;
         this.body = text;
         this.timestamp = new Timestamp(System.currentTimeMillis());
@@ -30,19 +30,18 @@ public class Message{
      * Adds timestamp on creation
      * @param username username of sender
      * @param text message body
-     * NOTE: need another way to pass time manually, not sure how to use Timestamp library
-     *             to get a time from a string
      */
-    public Message(String username, String text, Timestamp time) {
+    Message(String username, String text, Timestamp time) {
         this.username = username;
         this.body = text;
         this.timestamp = time;
     }
 
     /**
+     * Message constructor with a message in JSON form
      * @param j a json representation of a message
      */
-    public Message(JSONObject j) {
+    Message(JSONObject j) {
         if (j.containsKey("username")) {
             this.username = j.get("username").toString();
         }
@@ -58,16 +57,22 @@ public class Message{
     }
 
     /**
+     * Create a string of spaces of a given length
      * @param size of the space string to make
      * @return a string of size size of all spaces
      */
-    public String makeSpaceString(int size) {
+    private String makeSpaceString(int size) {
         String ret = new String();
         for (int i = 0; i < size; i++) {
             ret += " ";
         }
         return ret;
     }
+
+    /**
+     * toString implementation
+     * @return String form of this method
+     */
     @Override
     public String toString() {
         int wrapLen = 50;
@@ -111,9 +116,10 @@ public class Message{
     }
 
     /**
+     * Build a JSON representation of this message
      * @return a json representation of the message
      */
-    public JSONObject toJSON() {
+    JSONObject toJSON() {
         JSONObject j = new JSONObject();
         j.put("username", this.username);
         j.put("body", this.body);
@@ -123,23 +129,26 @@ public class Message{
     }
 
     /**
+     * Get the username from this message
      * @return the username who created the message
      */
-    public String getUsername() {
+    String getUsername() {
         return this.username;
     }
 
     /**
+     * Get the message body
      * @return the body of the message
      */
-    public String getBody() {
+    String getBody() {
         return this.body;
     }
 
     /**
-     * @return a LocalDateTime object of when the message was created
+     * Get the time that this message was created
+     * @return a Timestamp object of when the message was created
      */
-    public Timestamp getTimestamp() {
+    Timestamp getTimestamp() {
         return this.timestamp;
     }
 }
