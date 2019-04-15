@@ -1,5 +1,3 @@
-package src;
-
 import java.util.ArrayList;
 
 import com.sun.net.httpserver.HttpExchange;

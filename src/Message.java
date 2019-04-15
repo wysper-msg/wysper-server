@@ -1,5 +1,3 @@
-package src;
-
 import org.json.simple.JSONObject;
 
 import java.sql.Timestamp;
@@ -144,23 +142,4 @@ public class Message{
     public Timestamp getTimestamp() {
         return this.timestamp;
     }
-
-    public static void main(String[] args) {
-        System.out.println("Message main");
-        String s2 = "What if I pass a loooooooooooooooooooooooooooooo" +
-                "ooooooooooooooooooooooooooooooooooong " +
-                "string?";
-
-        String s3 = "Hello from wysper";
-        Message msg2 = new Message("Tom", s3);
-        Message msg1 = new Message("Tom", s2);
-        Message msg3 = new Message("Corey", "What's up");
-        Message msg4 = new Message("Tom", "Looks like the text wraps!");
-        System.out.println(msg2);
-        System.out.println(msg3);
-        System.out.println(msg1);
-        System.out.println(msg4);
-    }
-
-
 }

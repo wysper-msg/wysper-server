@@ -1,5 +1,3 @@
-package src;
-
 import java.util.Scanner;
 import java.net.InetSocketAddress;
 import com.sun.net.httpserver.HttpServer;
@@ -44,7 +42,7 @@ public class Server {
         boolean dropTables = args[1].equals("no-save");
 
         // start server
-        db = new DbWrapper(true);
+        db = new DbWrapper("wysperdb", true);
         HttpServer s = initServer(port);
         s.start();
         System.out.println(String.format("Started server on port %d. Type \'Exit\' to quit.", port));
@@ -56,7 +54,10 @@ public class Server {
             command = scanner.nextLine();
             if (command.equals("ShowMessages")) {
                 db.displayAllMessages();
-           }
+            }
+            if (command.equals("ShowUsers")) {
+                db.displayAllUsers();
+            }
         }
 
         // stop server
