@@ -92,7 +92,7 @@ class DbWrapper
                     "userid int, " +
                     "username varchar(30), " +
                     "time timestamp, " +
-                    "text varchar(255), " +
+                    "text varchar(8000), " +
                     "PRIMARY KEY(mid)" +
                     ")");
             System.out.println("Created table messages");
