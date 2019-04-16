@@ -1,7 +1,7 @@
 # wysper-server
 Server application for Wysper messaging service
 
-##IntelliJ Configuration
+## IntelliJ Configuration
 
 ##### Importing
 * Import from Github link using green Clone button.
